@@ -84,7 +84,7 @@ A('shop10', '🏪', 'お買いもの', 'ショップで 10回 買う', () => (S.
 function checkAch() {
   const got = [];
   for (const a of ACH) if (!S.ach[a.id] && a.test()) { S.ach[a.id] = Date.now(); S.newAch = (S.newAch || 0) + 1; got.push(a); }
-  if (got.length) { SE.play('star'); toast(got.length <= 2 ? got.map(a => `🏅 じっせき「${a.ja}」`).join('<br>') : `🏅 じっせきを ${got.length}こ ゲット! <span class="note">タイトルの「じっせき」で 見られるよ</span>`, 2600); }
+  if (got.length) { SFX.play('ach'); toast(got.length <= 2 ? got.map(a => `🏅 じっせき「${a.ja}」`).join('<br>') : `🏅 じっせきを ${got.length}こ ゲット! <span class="note">タイトルの「じっせき」で 見られるよ</span>`, 2600); }
   save();
 }
 
@@ -345,6 +345,7 @@ async function introFoes() {
     if (!has.length) { give = DRUGS.filter(d => effOf(d, p) === 2).sort((a, b) => a.gut - b.gut || a.cost - b.cost)[0] || (p.self ? D.ors : null); if (give && !learned(give.id)) learn(give.id); else if (p.self && !learned('ors')) { give = D.ors; learn('ors'); } else give = null; }
     const how = p.noDrug ? '効く薬は ない。<b>内視鏡</b>で 取り出そう' : p.self ? '特効薬は ない。体をささえて めんえきを 待とう' : `効く薬: <b>${DRUGS.filter(d => effOf(d, p) === 2 && d.cat !== 'sup').map(d => d.ja).slice(0, 4).join('・')}</b>${p.combo ? '<br>⚠️ 2つ以上を 同じターンに 組み合わせて使う(併用)' : ''}`;
     f.first = false;
+    SFX.play('newFoe');
     const effD = DRUGS.filter(d => effOf(d, p) === 2 && learned(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p)).slice(0, 4);
     await modal(`<div class="meet"><span class="meet-new">NEW!</span>${ART.patho(p, 3, 120)}</div><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].em} ${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span><b class="big">${p.ja}</b><p class="note">📍${p.place} 🤒${p.sym}</p>${p.noDrug ? '<p>💊 薬は 効かない → <b>内視鏡</b>で とり出そう</p>' : p.self ? '<p>💊 特効薬は ない → 体を ささえて めんえきを 待とう</p>' : `<p class="meet-d">💊 ${effD.map(d => `<span class="mini ${isBest(d, p) ? 'best' : ''}">${ART.drug(d, 36)}<b>${d.ja}</b></span>`).join('')}</p>`}${p.combo ? '<p class="warn">🤝 2つ以上を 同じターンに 使おう(併用)</p>' : ''}${give ? `<p class="got">🎁 <b>${give.ja}</b>を おぼえた!</p>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p></details><p class="note">次からは 自分で 思い出して たたかおう!</p>`, ['たたかう!']);
   }
@@ -476,7 +477,7 @@ async function useDrug(id) {
     if (d.hurt) { R.hp -= d.hurt; toast(`💊 ${d.ja}の 副作用 ❤️-${d.hurt}`); }
     if (d.immUp) { B.immUp = Math.min(4, B.immUp + d.immUp); floatTxt('🛡️めんえき UP', null, 'heal'); }
     if (d.immDown) { B.immDown += d.immDown; B.foes.forEach(f => { if (f.self) f.self++; }); toast('⚠️ めんえきが 下がった…(病原体への こうげきが 弱くなる)', 2600); }
-    SE.play('ok'); renderBattle(); return afterAction();
+    SFX.play(d.heal ? 'heal' : 'guard'); renderBattle(); return afterAction();
   }
   // 抗菌薬の 体への えいきょう(善玉菌・耐性)
   if (d.cat === 'abx' || d.gut) {
@@ -495,7 +496,7 @@ async function useDrug(id) {
     B.wrong++; R.wrong++;
     if (d.cat === 'abx') R.resist += 1;
     const pen = R.stage <= 1 ? 1 : 2; R.hp -= pen;
-    SE.play('ng'); renderBattle(); await fx('miss', ti); floatTxt('こうかが ない…', ti, 'bad'); floatTxt('❤️-' + pen, null, 'bad');
+    SFX.play('miss'); renderBattle(); await fx('miss', ti); floatTxt('こうかが ない…', ti, 'bad'); floatTxt('❤️-' + pen, null, 'bad');
     if (f.k < 3 && R.stage >= 2) f.k = Math.max(f.k, 0);
     toast(`❌ ${whyNot(d, p)}`, 3200);
     return afterAction();
@@ -516,7 +517,7 @@ async function useDrug(id) {
   const blk = Math.min(f.block, dmg); f.block -= blk; dmg -= blk;
   f.hp = Math.max(0, f.hp - dmg);
   if (f.k < 3 && e === 2) { if (f.info && f.info.ask) { f.k = 3; st('mitate'); setTimeout(() => toast(`🩺 見立てどおり! 正体は <b>${p.ja}</b>(治療しながら わかった)`, 3000), 500); } else f.k = Math.max(f.k, 1); }
-  SE.play(e === 2 ? 'land' : 'select'); renderBattle(); await fx('hit', ti); floatTxt('-' + dmg + (blk ? `(🛡️${blk})` : ''), ti); if (note) { if (/ばつぐん/.test(note)) { banner('✨ こうか ばつぐん!', 'best'); SE.play('perfect'); } else if (/しぼりこみ/.test(note)) banner('🎯 しぼりこみ 成功!', 'best'); else toast(note, 1800); }
+  SFX.play('drug'); renderBattle(); await fx('hit', ti); SFX.play(e === 2 ? 'hit' : 'hitSoft'); floatTxt('-' + dmg + (blk ? `(🛡️${blk})` : ''), ti); if (note) { if (/ばつぐん/.test(note)) { banner('✨ こうか ばつぐん!', 'best'); SFX.play('best'); } else if (/しぼりこみ/.test(note)) { banner('🎯 しぼりこみ 成功!', 'best'); SFX.play('deesc'); } else toast(note, 1800); }
   if (f.hp <= 0) await killFoe(ti);
   afterAction();
 }
@@ -526,8 +527,8 @@ async function killFoe(i) {
   const f = B.foes[i], p = P[f.pid];
   S.kills[p.id] = (S.kills[p.id] || 0) + 1; if (p.base) S.kills[p.base] = (S.kills[p.base] || 0) + 1;
   S.seen[p.id] = S.seen[p.id] || Date.now();
-  SE.play('star'); floatTxt('やっつけた!', i, 'good');
-  if (f.k < 3) { f.k = 3; await wait(200); toast(`正体は <b>${p.ja}</b> だった!`, 2400); }
+  SFX.play('kill'); floatTxt('やっつけた!', i, 'good');
+  if (f.k < 3) { f.k = 3; await wait(200); SFX.play('reveal'); toast(`正体は <b>${p.ja}</b> だった!`, 2400); }
   await wait(450);
 }
 function afterAction() {
@@ -584,7 +585,7 @@ function doTestKind(kind) {
     f.info.cultText = p.ja + (best.length && (p.cat === 'bac' || p.cat === 'fun') ? ' ・ よく効く: ' + best.join('・') : '');
     msg = '🧫 ' + f.info.cultText;
   }
-  SE.play('ok'); toast(msg, 3400); renderBattle();
+  SFX.play('test'); if (f.k >= 3) setTimeout(() => SFX.play('reveal'), 450); toast(msg, 3400); renderBattle();
 }
 async function doTest(free) {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
@@ -600,7 +601,7 @@ async function doTest(free) {
 function doHint() {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
   if (B.free) B.free--; else { const i = R.items.indexOf('hint'); if (i < 0) return; R.items.splice(i, 1); R.hintUsed++; }
-  f.k = 3; SE.play('ok'); toast(`💡 正体は <b>${P[f.pid].ja}</b>!`, 2400); renderBattle();
+  f.k = 3; SFX.play('reveal'); toast(`💡 正体は <b>${P[f.pid].ja}</b>!`, 2400); renderBattle();
 }
 function useItem(i) {
   const R = S.run, it = R.items[i];
@@ -625,7 +626,7 @@ async function playerTurn() {
   renderBattle();
 }
 async function endTurn() {
-  if (B.busy) return; B.busy = true; SE.play('select'); renderBattle();
+  if (B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();
   const R = S.run;
   const imm = immPower();
   for (let i = 0; i < B.foes.length; i++) {
@@ -646,7 +647,7 @@ async function endTurn() {
     if (k === 'atk') {
       let dmg = v; const g = Math.min(B.guard, dmg); B.guard -= g; dmg -= g;
       R.hp -= dmg; B.dmgTaken += dmg; f.toxin = false;
-      SE.play('ng'); await fx('atk', i); floatTxt('❤️-' + dmg + (g ? `(🛡️${g})` : ''), null, 'bad'); const pb = app.querySelector('.patbox'); if (pb) { pb.classList.remove('hurt'); void pb.offsetWidth; pb.classList.add('hurt'); }
+      SFX.play('hurt'); await fx('atk', i); floatTxt('❤️-' + dmg + (g ? `(🛡️${g})` : ''), null, 'bad'); const pb = app.querySelector('.patbox'); if (pb) { pb.classList.remove('hurt'); void pb.offsetWidth; pb.classList.add('hurt'); }
     } else if (k === 'grow') { if (f.dots.length) { floatTxt('薬が効いていて ふえられない', i); } else { f.hp = Math.min(Math.round(f.max * 1.2), f.hp + v); floatTxt('⬆️+' + v, i); } await wait(250); }
     else if (k === 'toxin') { f.toxin = true; floatTxt('☠️ どくそを ためた', i); await wait(250); }
     else if (k === 'hide') { f.block += R.relics.includes('gloves') ? Math.ceil(v / 2) : v; floatTxt('🛡️かくれた', i); await wait(250); }
@@ -665,7 +666,7 @@ async function win() {
   if (B.foes.some(f => P[f.pid].self) && !B.abxOnSelf) st('selfOk');
   R.gut = Math.min(10, R.gut + 2 + (R.relics.includes('yogurt') ? 1 : 0));
   checkAch(); save();
-  banner('🎉 やっつけた!', 'best'); SE.play('clear');
+  banner('🎉 やっつけた!', 'best'); SFX.play('win');
   await wait(900);
   if (!B.o.onWin) { await severeEvent(); checkAch(); }
   if (B.o.onWin) { SE.play('clear'); await modal(`<b class="big">🎉 治った!</b><p>患者さんが 元気に なったよ。</p>`, ['つぎへ']); return B.o.onWin(); }
@@ -698,6 +699,7 @@ function rewardScreen(node) {
   const coin = Math.round((node === 'boss' ? 60 : node === 'elite' ? 28 : 12 + rnd(8)) * ((R.mod && R.mod.coin) || 1));
   R.coins += coin;
   if (node === 'boss') return R.stage === 9 ? actClear(coin) : stageClear();
+  setTimeout(() => SFX.play('coin'), 150);
   const opts = [];
   const pool = shuffle(rewardPool(R));
   if (pool.length) opts.push({ k: 'learn', id: pool[0] });
@@ -717,7 +719,7 @@ function rewardScreen(node) {
   bindStatus(false);
   app.querySelectorAll('[data-o]').forEach(b => b.onclick = async () => {
     const o = opts[+b.dataset.o]; SE.play('ok');
-    if (o.k === 'learn') { learn(o.id); const d = D[o.id]; SE.play('star'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
+    if (o.k === 'learn') { learn(o.id); const d = D[o.id]; SFX.play('learn'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
     if (o.k === 'item') { if (R.items.length < 3) R.items.push(o.id); else toast('アイテムは 3こまで'); }
     checkAch(); save(); mapScreen();
@@ -738,7 +740,7 @@ async function stageClear() {
   if (!prev || RANKS.indexOf(rank) > RANKS.indexOf(prev)) S.best[key] = rank;
   if (rank === 'S') S.stat.rankS = (S.stat.rankS || 0) + 1;
   S.run = null; checkAch(); save();
-  SE.play('perfect');
+  SFX.play('clear'); if (rank === 'S') setTimeout(() => SFX.play('rankS'), 1500);
   await modal(`<div class="row c">${ART.doctor(S.look, 80)}${ART.patient(PATIENTS[STAGES[n - 1].patient].look, false, 70)}</div><b class="big">🎉 ステージ${n} クリア!</b><div class="rank r${rank}">名医ランク <b>${rank}</b><span class="note">${score}点</span></div><p>${PATIENTS[STAGES[n - 1].patient].ja}は すっかり 元気に なった!</p>
     <p class="note">効かない薬を 使った回数: ${R.wrong} ・ 耐性メーター: ${R.resist} ・ ヒント: ${R.hintUsed}</p>${n < 3 ? `<p>ステージ${n + 1} が 解放された!</p>` : '<p>全ステージ クリア! むずかしさを 上げて ちょうせんしよう。</p>'}<p class="note">むずかしさ${R.asc + 1} が えらべるように なった。</p>`, ['やったね!']);
   title();
@@ -760,7 +762,7 @@ function shopScreen() {
   app.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
     const i = +b.dataset.b, o = L.list[i]; if (R.coins < o.price) return;
     if (o.k === 'item' && R.items.length >= 3) return toast('アイテムは 3こまで');
-    R.coins -= o.price; L.sold.push(i); st('buy'); SE.play('ok');
+    R.coins -= o.price; L.sold.push(i); st('buy'); SFX.play('coin');
     if (o.k === 'item') R.items.push(o.id);
     if (o.k === 'relic') R.relics.push(o.id);
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
@@ -790,7 +792,7 @@ function upgradePick(done) {
 }
 async function treasureScreen() {
   const R = S.run; const r = pick(RELICS.filter(x => !R.relics.includes(x.id) && !x.rare)) || RELICS[0];
-  if (!R.relics.includes(r.id)) R.relics.push(r.id); R.coins += 15; save(); SE.play('star');
+  if (!R.relics.includes(r.id)) R.relics.push(r.id); R.coins += 15; save(); SFX.play('learn');
   await modal(`<b class="big">🎁 宝箱!</b><p>${r.em} <b>${r.ja}</b></p><p class="note">${r.desc}</p><p>🪙 +15</p>`, ['やった!']);
   mapScreen();
 }

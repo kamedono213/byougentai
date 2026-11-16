@@ -64,12 +64,12 @@ function severeCheck() {
 }
 async function severeEvent() {
   const s = severeCheck(); if (!s) return;
-  const R = S.run; SE.play('ng'); st('severe');
+  const R = S.run; SFX.play('siren'); st('severe');
   const ch = shuffle(s.choices);
   const i = await modal(`<b class="big">🚨 重症化! ${s.ja}</b><p>${s.text}</p><p class="vital">📟 ${s.vital}</p><p>どうする?</p>`, ch.map(c => c[0]));
   const good = ch[i] && ch[i][1];
-  if (good) { R.hp = Math.max(1, R.hp - 2); R.coins += 10; st('severeOk'); SE.play('perfect'); }
-  else { const pen = Math.max(6, Math.round(R.max * 0.25)); R.hp = Math.max(1, R.hp - pen); R.wrong++; }
+  if (good) { R.hp = Math.max(1, R.hp - 2); R.coins += 10; st('severeOk'); SFX.play('saved'); }
+  else { const pen = Math.max(6, Math.round(R.max * 0.25)); R.hp = Math.max(1, R.hp - pen); R.wrong++; SFX.play('bad'); }
   S.seenSevere = Object.assign({}, S.seenSevere, { [s.id]: 1 });
   save();
   await modal(`<b class="big">${good ? '✅ 正しい対処!' : '❌ 対処が おくれた…'}</b><p>${good ? s.ok : s.ng}</p>${good ? '<p class="note">患者さんは もちなおした(体力 -2・🪙+10)</p>' : `<p class="note">患者さんの 体力が 大きく へった</p><p class="note">正解: ${s.choices.find(c => c[1])[0]}</p>`}<p class="note">※ ゲームの中の話。本当の治療は お医者さんが 決める。</p>`, ['OK']);

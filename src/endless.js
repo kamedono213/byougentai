@@ -161,7 +161,7 @@ async function actClear(coin) {
   S.endless.scn = Object.assign({}, S.endless.scn, { [R.scn]: (S.endless.scn && S.endless.scn[R.scn] || 0) + 1 });
   let got = '';
   for (let k = 0; k < (R.mod.relic || 0) + 1; k++) { const r = pick(RELICS.filter(x => !R.relics.includes(x.id))); if (r) { R.relics.push(r.id); got += `<p class="got">${r.em} <b>${r.ja}</b><br><span class="note">${r.desc}</span></p>`; } }
-  R.act++; checkAch(); save(); SE.play('perfect');
+  R.act++; checkAch(); save(); SFX.play('clear');
   await modal(`<b class="big">🎉 ${R.act - 1}幕 クリア!</b><p>🪙 +${coin}</p>${got}<p>次は <b>${R.act}幕</b>。病原体が もっと 強くなる…!</p><p class="note">さいこう記録: ${S.endless.best}幕</p>`, ['次の 派遣先へ']);
   chooseScenario();
 }

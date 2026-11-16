@@ -686,7 +686,7 @@ async function actClear(coin) {
   S.endless.scn = Object.assign({}, S.endless.scn, { [R.scn]: (S.endless.scn && S.endless.scn[R.scn] || 0) + 1 });
   let got = '';
   for (let k = 0; k < (R.mod.relic || 0) + 1; k++) { const r = pick(RELICS.filter(x => !R.relics.includes(x.id))); if (r) { R.relics.push(r.id); got += `<p class="got">${r.em} <b>${r.ja}</b><br><span class="note">${r.desc}</span></p>`; } }
-  R.act++; checkAch(); save(); SE.play('perfect');
+  R.act++; checkAch(); save(); SFX.play('clear');
   await modal(`<b class="big">🎉 ${R.act - 1}幕 クリア!</b><p>🪙 +${coin}</p>${got}<p>次は <b>${R.act}幕</b>。病原体が もっと 強くなる…!</p><p class="note">さいこう記録: ${S.endless.best}幕</p>`, ['次の 派遣先へ']);
   chooseScenario();
 }
@@ -862,6 +862,58 @@ ART.drug = (d, size = 48) => {
   return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" class="dz">${F[FORM[d.id]] || F.pill}</svg>`;
 };
 
+// ---------- 場面ごとの 効果音(Web Audio で その場で 作る。音声ファイルは 使わない)
+// うまくいった時ほど 気持ちいい音に。SE の「音あり/なし」に したがう
+const SFX = (() => {
+  let ctx = null, master = null;
+  const ac = () => { if (!ctx) { ctx = new (window.AudioContext || window.webkitAudioContext)(); master = ctx.createGain(); master.gain.value = 0.55; master.connect(ctx.destination); } if (ctx.state === 'suspended') ctx.resume(); return ctx; };
+  // 1つの音: 波の形・高さ(Hz)・始まり・長さ・大きさ・高さの変化
+  function tone(type, f, t0, dur, vol = 0.3, f2 = null, delay = 0) {
+    const c = ac(), t = c.currentTime + t0, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(master);
+    if (delay) { const d = c.createDelay(); d.delayTime.value = delay; const fb = c.createGain(); fb.gain.value = 0.25; g.connect(d); d.connect(fb); fb.connect(d); fb.connect(master); }
+    o.start(t); o.stop(t + dur + 0.05);
+  }
+  function noise(t0, dur, vol = 0.2, f1 = 800, f2 = 3000, type = 'bandpass') {
+    const c = ac(), t = c.currentTime + t0, len = Math.max(1, c.sampleRate * dur), buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const s = c.createBufferSource(); s.buffer = buf; const fl = c.createBiquadFilter(); fl.type = type; fl.frequency.setValueAtTime(f1, t); fl.frequency.exponentialRampToValueAtTime(f2, t + dur); fl.Q.value = 1;
+    const g = c.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    s.connect(fl); fl.connect(g); g.connect(master); s.start(t); s.stop(t + dur);
+  }
+  const N = n => 440 * Math.pow(2, (n - 69) / 12); // MIDIの番号 → Hz
+  const arp = (notes, step, type = 'triangle', vol = 0.25, len = 0.25, delay = 0) => notes.forEach((n, i) => tone(type, N(n), i * step, len, vol, null, delay));
+  const SOUNDS = {
+    hit: () => { noise(0, 0.12, 0.35, 2000, 300, 'lowpass'); tone('square', 220, 0, 0.1, 0.15, 110); },                       // 効いた
+    hitSoft: () => { noise(0, 0.08, 0.2, 1200, 400, 'lowpass'); },                                                           // 効きにくい
+    best: () => { tone('sine', N(84), 0, 0.12, 0.2); arp([72, 76, 79, 84, 88], 0.06, 'triangle', 0.28, 0.35, 0.12); noise(0.3, 0.5, 0.12, 6000, 12000, 'highpass'); [0.32, 0.42, 0.52].forEach((d, i) => tone('sine', N(96 + i * 2), d, 0.18, 0.08)); }, // こうかばつぐん!
+    miss: () => { tone('sawtooth', 160, 0, 0.32, 0.18, 110); tone('sawtooth', 150, 0.03, 0.3, 0.12, 100); },                  // ブッブー(効かない)
+    kill: () => { noise(0, 0.15, 0.3, 300, 3000); tone('sine', N(79), 0.05, 0.12, 0.25); arp([84, 91], 0.08, 'triangle', 0.22, 0.3, 0.1); }, // ポンッ キラン
+    hurt: () => { tone('sine', 140, 0, 0.25, 0.4, 60); noise(0, 0.12, 0.2, 600, 150, 'lowpass'); },                          // こうげきを うけた
+    heal: () => arp([67, 71, 74, 79], 0.07, 'sine', 0.2, 0.35, 0.1),                                                          // 回復
+    guard: () => { tone('triangle', N(74), 0, 0.15, 0.2); tone('triangle', N(81), 0.06, 0.25, 0.18); },
+    drug: () => { tone('sine', 660, 0, 0.06, 0.15, 990); noise(0.02, 0.1, 0.12, 3000, 6000, 'highpass'); },                // 薬を 使った(シュッ)
+    select: () => tone('sine', 880, 0, 0.05, 0.12),
+    test: () => { [0, 0.09, 0.18].forEach((d, i) => tone('square', 1200 + i * 200, d, 0.06, 0.08)); tone('sine', 1760, 0.3, 0.2, 0.12); }, // ピピピ…ピーン
+    reveal: () => arp([76, 79, 83, 88], 0.05, 'triangle', 0.2, 0.3, 0.1),                                                   // 正体が わかった
+    newFoe: () => { tone('sawtooth', N(57), 0, 0.18, 0.15); tone('sawtooth', N(60), 0.18, 0.18, 0.15); tone('sawtooth', N(64), 0.36, 0.4, 0.15); }, // ジャジャーン
+    learn: () => { arp([72, 76, 79], 0.1, 'triangle', 0.25, 0.3); arp([84, 88, 91, 96], 0.07, 'sine', 0.2, 0.4, 0.15); },    // 新しい薬
+    win: () => { arp([67, 72, 76, 79], 0.09, 'square', 0.12, 0.2); tone('triangle', N(84), 0.4, 0.6, 0.25, null, 0.15); },    // やっつけた!
+    coin: () => { tone('square', N(88), 0, 0.07, 0.12); tone('square', N(93), 0.07, 0.25, 0.12); },                          // コイン
+    clear: () => { const m = [72, 72, 72, 76, 79, 76, 79, 84]; const tt = [0, .12, .24, .36, .6, .78, .9, 1.1]; m.forEach((n, i) => tone('square', N(n), tt[i], i === 7 ? 0.8 : 0.16, 0.13)); [60, 64, 67].forEach(n => tone('triangle', N(n), 1.1, 0.9, 0.12)); }, // ステージクリア
+    rankS: () => { arp([79, 83, 86, 91, 95, 98], 0.05, 'sine', 0.2, 0.5, 0.15); noise(0.3, 0.9, 0.1, 8000, 14000, 'highpass'); },
+    siren: () => { for (let i = 0; i < 3; i++) { tone('sawtooth', 700, i * 0.4, 0.2, 0.12, 1000); tone('sawtooth', 1000, i * 0.4 + 0.2, 0.2, 0.12, 700); } }, // 重症化!
+    saved: () => { arp([60, 64, 67, 72, 76, 79, 84], 0.06, 'triangle', 0.2, 0.4, 0.12); },                                   // 正しい 対処
+    bad: () => { tone('triangle', N(64), 0, 0.3, 0.2); tone('triangle', N(60), 0.25, 0.3, 0.2); tone('triangle', N(55), 0.5, 0.6, 0.2); }, // しっぱい
+    deesc: () => { arp([79, 84, 88], 0.08, 'sine', 0.22, 0.3, 0.1); tone('triangle', N(91), 0.26, 0.5, 0.2, null, 0.15); },
+    turn: () => tone('sine', 520, 0, 0.08, 0.1, 780),                                                                         // ターン終了
+    ach: () => { arp([88, 91, 96], 0.07, 'square', 0.1, 0.18); noise(0.2, 0.4, 0.08, 8000, 12000, 'highpass'); },
+  };
+  return { play(n) { try { if (SE.muted || !SOUNDS[n]) return; SOUNDS[n](); } catch (e) { /* 音が出なくても 遊べる */ } } };
+})();
+
 // ---------- やっつけ!びょうげんたい 本体
 const $ = (q, r = document) => r.querySelector(q);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -948,7 +1000,7 @@ A('shop10', '🏪', 'お買いもの', 'ショップで 10回 買う', () => (S.
 function checkAch() {
   const got = [];
   for (const a of ACH) if (!S.ach[a.id] && a.test()) { S.ach[a.id] = Date.now(); S.newAch = (S.newAch || 0) + 1; got.push(a); }
-  if (got.length) { SE.play('star'); toast(got.length <= 2 ? got.map(a => `🏅 じっせき「${a.ja}」`).join('<br>') : `🏅 じっせきを ${got.length}こ ゲット! <span class="note">タイトルの「じっせき」で 見られるよ</span>`, 2600); }
+  if (got.length) { SFX.play('ach'); toast(got.length <= 2 ? got.map(a => `🏅 じっせき「${a.ja}」`).join('<br>') : `🏅 じっせきを ${got.length}こ ゲット! <span class="note">タイトルの「じっせき」で 見られるよ</span>`, 2600); }
   save();
 }
 
@@ -1209,6 +1261,7 @@ async function introFoes() {
     if (!has.length) { give = DRUGS.filter(d => effOf(d, p) === 2).sort((a, b) => a.gut - b.gut || a.cost - b.cost)[0] || (p.self ? D.ors : null); if (give && !learned(give.id)) learn(give.id); else if (p.self && !learned('ors')) { give = D.ors; learn('ors'); } else give = null; }
     const how = p.noDrug ? '効く薬は ない。<b>内視鏡</b>で 取り出そう' : p.self ? '特効薬は ない。体をささえて めんえきを 待とう' : `効く薬: <b>${DRUGS.filter(d => effOf(d, p) === 2 && d.cat !== 'sup').map(d => d.ja).slice(0, 4).join('・')}</b>${p.combo ? '<br>⚠️ 2つ以上を 同じターンに 組み合わせて使う(併用)' : ''}`;
     f.first = false;
+    SFX.play('newFoe');
     const effD = DRUGS.filter(d => effOf(d, p) === 2 && learned(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p)).slice(0, 4);
     await modal(`<div class="meet"><span class="meet-new">NEW!</span>${ART.patho(p, 3, 120)}</div><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].em} ${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span><b class="big">${p.ja}</b><p class="note">📍${p.place} 🤒${p.sym}</p>${p.noDrug ? '<p>💊 薬は 効かない → <b>内視鏡</b>で とり出そう</p>' : p.self ? '<p>💊 特効薬は ない → 体を ささえて めんえきを 待とう</p>' : `<p class="meet-d">💊 ${effD.map(d => `<span class="mini ${isBest(d, p) ? 'best' : ''}">${ART.drug(d, 36)}<b>${d.ja}</b></span>`).join('')}</p>`}${p.combo ? '<p class="warn">🤝 2つ以上を 同じターンに 使おう(併用)</p>' : ''}${give ? `<p class="got">🎁 <b>${give.ja}</b>を おぼえた!</p>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p></details><p class="note">次からは 自分で 思い出して たたかおう!</p>`, ['たたかう!']);
   }
@@ -1340,7 +1393,7 @@ async function useDrug(id) {
     if (d.hurt) { R.hp -= d.hurt; toast(`💊 ${d.ja}の 副作用 ❤️-${d.hurt}`); }
     if (d.immUp) { B.immUp = Math.min(4, B.immUp + d.immUp); floatTxt('🛡️めんえき UP', null, 'heal'); }
     if (d.immDown) { B.immDown += d.immDown; B.foes.forEach(f => { if (f.self) f.self++; }); toast('⚠️ めんえきが 下がった…(病原体への こうげきが 弱くなる)', 2600); }
-    SE.play('ok'); renderBattle(); return afterAction();
+    SFX.play(d.heal ? 'heal' : 'guard'); renderBattle(); return afterAction();
   }
   // 抗菌薬の 体への えいきょう(善玉菌・耐性)
   if (d.cat === 'abx' || d.gut) {
@@ -1359,7 +1412,7 @@ async function useDrug(id) {
     B.wrong++; R.wrong++;
     if (d.cat === 'abx') R.resist += 1;
     const pen = R.stage <= 1 ? 1 : 2; R.hp -= pen;
-    SE.play('ng'); renderBattle(); await fx('miss', ti); floatTxt('こうかが ない…', ti, 'bad'); floatTxt('❤️-' + pen, null, 'bad');
+    SFX.play('miss'); renderBattle(); await fx('miss', ti); floatTxt('こうかが ない…', ti, 'bad'); floatTxt('❤️-' + pen, null, 'bad');
     if (f.k < 3 && R.stage >= 2) f.k = Math.max(f.k, 0);
     toast(`❌ ${whyNot(d, p)}`, 3200);
     return afterAction();
@@ -1380,7 +1433,7 @@ async function useDrug(id) {
   const blk = Math.min(f.block, dmg); f.block -= blk; dmg -= blk;
   f.hp = Math.max(0, f.hp - dmg);
   if (f.k < 3 && e === 2) { if (f.info && f.info.ask) { f.k = 3; st('mitate'); setTimeout(() => toast(`🩺 見立てどおり! 正体は <b>${p.ja}</b>(治療しながら わかった)`, 3000), 500); } else f.k = Math.max(f.k, 1); }
-  SE.play(e === 2 ? 'land' : 'select'); renderBattle(); await fx('hit', ti); floatTxt('-' + dmg + (blk ? `(🛡️${blk})` : ''), ti); if (note) { if (/ばつぐん/.test(note)) { banner('✨ こうか ばつぐん!', 'best'); SE.play('perfect'); } else if (/しぼりこみ/.test(note)) banner('🎯 しぼりこみ 成功!', 'best'); else toast(note, 1800); }
+  SFX.play('drug'); renderBattle(); await fx('hit', ti); SFX.play(e === 2 ? 'hit' : 'hitSoft'); floatTxt('-' + dmg + (blk ? `(🛡️${blk})` : ''), ti); if (note) { if (/ばつぐん/.test(note)) { banner('✨ こうか ばつぐん!', 'best'); SFX.play('best'); } else if (/しぼりこみ/.test(note)) { banner('🎯 しぼりこみ 成功!', 'best'); SFX.play('deesc'); } else toast(note, 1800); }
   if (f.hp <= 0) await killFoe(ti);
   afterAction();
 }
@@ -1390,8 +1443,8 @@ async function killFoe(i) {
   const f = B.foes[i], p = P[f.pid];
   S.kills[p.id] = (S.kills[p.id] || 0) + 1; if (p.base) S.kills[p.base] = (S.kills[p.base] || 0) + 1;
   S.seen[p.id] = S.seen[p.id] || Date.now();
-  SE.play('star'); floatTxt('やっつけた!', i, 'good');
-  if (f.k < 3) { f.k = 3; await wait(200); toast(`正体は <b>${p.ja}</b> だった!`, 2400); }
+  SFX.play('kill'); floatTxt('やっつけた!', i, 'good');
+  if (f.k < 3) { f.k = 3; await wait(200); SFX.play('reveal'); toast(`正体は <b>${p.ja}</b> だった!`, 2400); }
   await wait(450);
 }
 function afterAction() {
@@ -1448,7 +1501,7 @@ function doTestKind(kind) {
     f.info.cultText = p.ja + (best.length && (p.cat === 'bac' || p.cat === 'fun') ? ' ・ よく効く: ' + best.join('・') : '');
     msg = '🧫 ' + f.info.cultText;
   }
-  SE.play('ok'); toast(msg, 3400); renderBattle();
+  SFX.play('test'); if (f.k >= 3) setTimeout(() => SFX.play('reveal'), 450); toast(msg, 3400); renderBattle();
 }
 async function doTest(free) {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
@@ -1464,7 +1517,7 @@ async function doTest(free) {
 function doHint() {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
   if (B.free) B.free--; else { const i = R.items.indexOf('hint'); if (i < 0) return; R.items.splice(i, 1); R.hintUsed++; }
-  f.k = 3; SE.play('ok'); toast(`💡 正体は <b>${P[f.pid].ja}</b>!`, 2400); renderBattle();
+  f.k = 3; SFX.play('reveal'); toast(`💡 正体は <b>${P[f.pid].ja}</b>!`, 2400); renderBattle();
 }
 function useItem(i) {
   const R = S.run, it = R.items[i];
@@ -1489,7 +1542,7 @@ async function playerTurn() {
   renderBattle();
 }
 async function endTurn() {
-  if (B.busy) return; B.busy = true; SE.play('select'); renderBattle();
+  if (B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();
   const R = S.run;
   const imm = immPower();
   for (let i = 0; i < B.foes.length; i++) {
@@ -1510,7 +1563,7 @@ async function endTurn() {
     if (k === 'atk') {
       let dmg = v; const g = Math.min(B.guard, dmg); B.guard -= g; dmg -= g;
       R.hp -= dmg; B.dmgTaken += dmg; f.toxin = false;
-      SE.play('ng'); await fx('atk', i); floatTxt('❤️-' + dmg + (g ? `(🛡️${g})` : ''), null, 'bad'); const pb = app.querySelector('.patbox'); if (pb) { pb.classList.remove('hurt'); void pb.offsetWidth; pb.classList.add('hurt'); }
+      SFX.play('hurt'); await fx('atk', i); floatTxt('❤️-' + dmg + (g ? `(🛡️${g})` : ''), null, 'bad'); const pb = app.querySelector('.patbox'); if (pb) { pb.classList.remove('hurt'); void pb.offsetWidth; pb.classList.add('hurt'); }
     } else if (k === 'grow') { if (f.dots.length) { floatTxt('薬が効いていて ふえられない', i); } else { f.hp = Math.min(Math.round(f.max * 1.2), f.hp + v); floatTxt('⬆️+' + v, i); } await wait(250); }
     else if (k === 'toxin') { f.toxin = true; floatTxt('☠️ どくそを ためた', i); await wait(250); }
     else if (k === 'hide') { f.block += R.relics.includes('gloves') ? Math.ceil(v / 2) : v; floatTxt('🛡️かくれた', i); await wait(250); }
@@ -1529,7 +1582,7 @@ async function win() {
   if (B.foes.some(f => P[f.pid].self) && !B.abxOnSelf) st('selfOk');
   R.gut = Math.min(10, R.gut + 2 + (R.relics.includes('yogurt') ? 1 : 0));
   checkAch(); save();
-  banner('🎉 やっつけた!', 'best'); SE.play('clear');
+  banner('🎉 やっつけた!', 'best'); SFX.play('win');
   await wait(900);
   if (!B.o.onWin) { await severeEvent(); checkAch(); }
   if (B.o.onWin) { SE.play('clear'); await modal(`<b class="big">🎉 治った!</b><p>患者さんが 元気に なったよ。</p>`, ['つぎへ']); return B.o.onWin(); }
@@ -1562,6 +1615,7 @@ function rewardScreen(node) {
   const coin = Math.round((node === 'boss' ? 60 : node === 'elite' ? 28 : 12 + rnd(8)) * ((R.mod && R.mod.coin) || 1));
   R.coins += coin;
   if (node === 'boss') return R.stage === 9 ? actClear(coin) : stageClear();
+  setTimeout(() => SFX.play('coin'), 150);
   const opts = [];
   const pool = shuffle(rewardPool(R));
   if (pool.length) opts.push({ k: 'learn', id: pool[0] });
@@ -1581,7 +1635,7 @@ function rewardScreen(node) {
   bindStatus(false);
   app.querySelectorAll('[data-o]').forEach(b => b.onclick = async () => {
     const o = opts[+b.dataset.o]; SE.play('ok');
-    if (o.k === 'learn') { learn(o.id); const d = D[o.id]; SE.play('star'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
+    if (o.k === 'learn') { learn(o.id); const d = D[o.id]; SFX.play('learn'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
     if (o.k === 'item') { if (R.items.length < 3) R.items.push(o.id); else toast('アイテムは 3こまで'); }
     checkAch(); save(); mapScreen();
@@ -1602,7 +1656,7 @@ async function stageClear() {
   if (!prev || RANKS.indexOf(rank) > RANKS.indexOf(prev)) S.best[key] = rank;
   if (rank === 'S') S.stat.rankS = (S.stat.rankS || 0) + 1;
   S.run = null; checkAch(); save();
-  SE.play('perfect');
+  SFX.play('clear'); if (rank === 'S') setTimeout(() => SFX.play('rankS'), 1500);
   await modal(`<div class="row c">${ART.doctor(S.look, 80)}${ART.patient(PATIENTS[STAGES[n - 1].patient].look, false, 70)}</div><b class="big">🎉 ステージ${n} クリア!</b><div class="rank r${rank}">名医ランク <b>${rank}</b><span class="note">${score}点</span></div><p>${PATIENTS[STAGES[n - 1].patient].ja}は すっかり 元気に なった!</p>
     <p class="note">効かない薬を 使った回数: ${R.wrong} ・ 耐性メーター: ${R.resist} ・ ヒント: ${R.hintUsed}</p>${n < 3 ? `<p>ステージ${n + 1} が 解放された!</p>` : '<p>全ステージ クリア! むずかしさを 上げて ちょうせんしよう。</p>'}<p class="note">むずかしさ${R.asc + 1} が えらべるように なった。</p>`, ['やったね!']);
   title();
@@ -1624,7 +1678,7 @@ function shopScreen() {
   app.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
     const i = +b.dataset.b, o = L.list[i]; if (R.coins < o.price) return;
     if (o.k === 'item' && R.items.length >= 3) return toast('アイテムは 3こまで');
-    R.coins -= o.price; L.sold.push(i); st('buy'); SE.play('ok');
+    R.coins -= o.price; L.sold.push(i); st('buy'); SFX.play('coin');
     if (o.k === 'item') R.items.push(o.id);
     if (o.k === 'relic') R.relics.push(o.id);
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
@@ -1654,7 +1708,7 @@ function upgradePick(done) {
 }
 async function treasureScreen() {
   const R = S.run; const r = pick(RELICS.filter(x => !R.relics.includes(x.id) && !x.rare)) || RELICS[0];
-  if (!R.relics.includes(r.id)) R.relics.push(r.id); R.coins += 15; save(); SE.play('star');
+  if (!R.relics.includes(r.id)) R.relics.push(r.id); R.coins += 15; save(); SFX.play('learn');
   await modal(`<b class="big">🎁 宝箱!</b><p>${r.em} <b>${r.ja}</b></p><p class="note">${r.desc}</p><p>🪙 +15</p>`, ['やった!']);
   mapScreen();
 }
@@ -1813,12 +1867,12 @@ function severeCheck() {
 }
 async function severeEvent() {
   const s = severeCheck(); if (!s) return;
-  const R = S.run; SE.play('ng'); st('severe');
+  const R = S.run; SFX.play('siren'); st('severe');
   const ch = shuffle(s.choices);
   const i = await modal(`<b class="big">🚨 重症化! ${s.ja}</b><p>${s.text}</p><p class="vital">📟 ${s.vital}</p><p>どうする?</p>`, ch.map(c => c[0]));
   const good = ch[i] && ch[i][1];
-  if (good) { R.hp = Math.max(1, R.hp - 2); R.coins += 10; st('severeOk'); SE.play('perfect'); }
-  else { const pen = Math.max(6, Math.round(R.max * 0.25)); R.hp = Math.max(1, R.hp - pen); R.wrong++; }
+  if (good) { R.hp = Math.max(1, R.hp - 2); R.coins += 10; st('severeOk'); SFX.play('saved'); }
+  else { const pen = Math.max(6, Math.round(R.max * 0.25)); R.hp = Math.max(1, R.hp - pen); R.wrong++; SFX.play('bad'); }
   S.seenSevere = Object.assign({}, S.seenSevere, { [s.id]: 1 });
   save();
   await modal(`<b class="big">${good ? '✅ 正しい対処!' : '❌ 対処が おくれた…'}</b><p>${good ? s.ok : s.ng}</p>${good ? '<p class="note">患者さんは もちなおした(体力 -2・🪙+10)</p>' : `<p class="note">患者さんの 体力が 大きく へった</p><p class="note">正解: ${s.choices.find(c => c[1])[0]}</p>`}<p class="note">※ ゲームの中の話。本当の治療は お医者さんが 決める。</p>`, ['OK']);
