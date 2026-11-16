@@ -43,19 +43,49 @@ const ART = (() => {
     { id: 'hakase', ja: '博士', skin: '#f1c8a5', hair: '#e8e8e8', style: 'bald', need: 's1' },
     { id: 'robo', ja: 'ロボ先生', skin: '#9fb6c9', hair: '#4b6a85', style: 'robo', need: 's3' },
   ];
-  function doctor(look, size = 110) {
+  // 主人公: 肌の色・髪型・髪の色・服・小物を 組み合わせる(look は プリセットの id か、{skin,style,hair,coat,acc})
+  const SKINS = ['#ffe0c4', '#f6d2b0', '#e8b98f', '#c98e62', '#a8693f', '#7a4a2a'];
+  const HAIRC = ['#1f1f1f', '#3b2a1e', '#7a4a2a', '#c9873a', '#f0d27a', '#e8e8e8', '#d94a4a', '#4a7ad9', '#7ad36b', '#ff8fc0'];
+  const STYLES = [['short', 'みじかい'], ['side', 'わけめ'], ['spiky', 'つんつん'], ['curly', 'くるくる'], ['bob', 'ボブ'], ['pony', 'ポニーテール'], ['twin', 'ツインテール'], ['bun', 'おだんご'], ['long', 'ロング'], ['braid', 'みつあみ'], ['afro', 'アフロ'], ['bald', 'つるつる'], ['robo', 'ロボ']];
+  const COATS = [['#ffffff', '白衣'], ['#7fb3ff', '青の スクラブ'], ['#7ad3a0', '緑の スクラブ'], ['#ff9ec4', 'ピンクの スクラブ'], ['#b49cff', 'むらさき'], ['#333a48', '黒']];
+  const ACCS = [['none', 'なし'], ['glasses', 'めがね'], ['round', 'まるめがね'], ['cap', 'ナースキャップ'], ['mirror', '額帯鏡'], ['mask', 'マスク'], ['band', 'ヘアバンド'], ['crown', 'おうかん']];
+  function lookObj(look) {
+    if (look && typeof look === 'object') return look;
     const L = LOOKS.find(l => l.id === look) || LOOKS[0];
+    return { skin: L.skin, style: L.style, hair: L.hair, coat: '#ffffff', acc: L.style === 'bald' ? 'round' : 'none' };
+  }
+  function doctor(look, size = 110) {
+    const L = lookObj(look), H = L.hair;
     const hair = {
-      short: `<path d="M28 34 Q30 14 50 14 Q70 14 72 34 Q64 24 50 26 Q36 24 28 34Z" fill="${L.hair}"/>`,
-      pony: `<path d="M27 36 Q28 12 50 13 Q72 12 73 36 Q66 22 50 24 Q34 22 27 36Z" fill="${L.hair}"/><path d="M72 28 Q88 34 80 56" stroke="${L.hair}" stroke-width="8" fill="none" stroke-linecap="round"/><circle cx="73" cy="27" r="4" fill="#ff7aa8"/>`,
-      side: `<path d="M27 36 Q26 12 52 13 Q74 14 73 32 Q60 20 40 26 Q32 28 27 36Z" fill="${L.hair}"/>`,
-      long: `<path d="M26 60 Q22 14 50 13 Q78 14 74 60 L68 58 Q70 26 50 25 Q30 26 32 58Z" fill="${L.hair}"/>`,
-      bald: `<path d="M27 38 Q24 30 30 26 M73 38 Q76 30 70 26" stroke="${L.hair}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M36 50 Q50 60 64 50" stroke="${L.hair}" stroke-width="6" fill="none"/>`,
-      robo: `<rect x="44" y="4" width="12" height="10" fill="${L.hair}"/><circle cx="50" cy="4" r="4" fill="#ff5d5d"/>`,
-    }[L.style];
-    const face = L.style === 'robo' ? `<rect x="28" y="16" width="44" height="40" rx="8" fill="${L.skin}" stroke="${L.hair}" stroke-width="3"/><rect x="34" y="28" width="12" height="8" rx="2" fill="#59f0ff"/><rect x="54" y="28" width="12" height="8" rx="2" fill="#59f0ff"/><rect x="40" y="44" width="20" height="4" rx="2" fill="${L.hair}"/>`
-      : `<ellipse cx="50" cy="38" rx="22" ry="23" fill="${L.skin}"/><circle cx="42" cy="38" r="2.6" fill="#222"/><circle cx="58" cy="38" r="2.6" fill="#222"/><path d="M44 47 Q50 52 56 47" stroke="#a0522d" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="37" cy="45" r="3.5" fill="#ff9a9a" opacity=".5"/><circle cx="63" cy="45" r="3.5" fill="#ff9a9a" opacity=".5"/>`;
-    return `<svg viewBox="0 0 100 120" width="${size}" height="${size * 1.2}" class="doc"><path d="M20 120 Q20 70 50 66 Q80 70 80 120Z" fill="#fff" stroke="#c9d3e0" stroke-width="2"/><path d="M50 66 L42 120 M50 66 L58 120" stroke="#c9d3e0" stroke-width="2"/><path d="M40 70 Q34 92 46 96 Q56 98 54 86" stroke="#334" stroke-width="3" fill="none"/><circle cx="54" cy="84" r="4" fill="#9aa"/><rect x="60" y="84" width="10" height="12" rx="2" fill="#7fb3ff"/>${face}${hair}</svg>`;
+      short: `<path d="M28 34 Q30 14 50 14 Q70 14 72 34 Q64 24 50 26 Q36 24 28 34Z" fill="${H}"/>`,
+      side: `<path d="M27 36 Q26 12 52 13 Q74 14 73 32 Q60 20 40 26 Q32 28 27 36Z" fill="${H}"/>`,
+      spiky: `<path d="M28 34 L30 16 L38 22 L42 8 L50 20 L58 6 L62 20 L70 12 L72 34 Q60 24 50 26 Q38 24 28 34Z" fill="${H}"/>`,
+      curly: [[32, 22], [42, 15], [54, 14], [65, 20], [72, 30], [28, 32]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9" fill="${H}"/>`).join(''),
+      bob: `<path d="M26 50 Q22 12 50 13 Q78 12 74 50 L68 48 Q70 26 50 26 Q30 26 32 48Z" fill="${H}"/>`,
+      pony: `<path d="M27 36 Q28 12 50 13 Q72 12 73 36 Q66 22 50 24 Q34 22 27 36Z" fill="${H}"/><path d="M72 28 Q88 34 80 56" stroke="${H}" stroke-width="8" fill="none" stroke-linecap="round"/><circle cx="73" cy="27" r="4" fill="#ff7aa8"/>`,
+      twin: `<path d="M27 36 Q28 12 50 13 Q72 12 73 36 Q66 22 50 24 Q34 22 27 36Z" fill="${H}"/><path d="M28 28 Q12 36 18 58 M72 28 Q88 36 82 58" stroke="${H}" stroke-width="8" fill="none" stroke-linecap="round"/><circle cx="28" cy="27" r="4" fill="#ffd34d"/><circle cx="72" cy="27" r="4" fill="#ffd34d"/>`,
+      bun: `<path d="M27 36 Q28 14 50 14 Q72 14 73 36 Q66 22 50 24 Q34 22 27 36Z" fill="${H}"/><circle cx="50" cy="8" r="9" fill="${H}"/>`,
+      long: `<path d="M26 60 Q22 14 50 13 Q78 14 74 60 L68 58 Q70 26 50 25 Q30 26 32 58Z" fill="${H}"/>`,
+      braid: `<path d="M27 36 Q28 12 50 13 Q72 12 73 36 Q66 22 50 24 Q34 22 27 36Z" fill="${H}"/>${[40, 48, 56, 64].map(y => `<ellipse cx="74" cy="${y}" rx="5" ry="5" fill="${H}"/>`).join('')}`,
+      afro: `<circle cx="50" cy="24" r="27" fill="${H}"/>`,
+      bald: `<path d="M27 38 Q24 30 30 26 M73 38 Q76 30 70 26" stroke="${H}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M36 50 Q50 60 64 50" stroke="${H}" stroke-width="6" fill="none"/>`,
+      robo: `<rect x="44" y="4" width="12" height="10" fill="${H}"/><circle cx="50" cy="4" r="4" fill="#ff5d5d"/>`,
+    }[L.style] || '';
+    const behind = L.style === 'afro' ? hair : '';
+    const front = L.style === 'afro' ? '' : hair;
+    const face = L.style === 'robo' ? `<rect x="28" y="16" width="44" height="40" rx="8" fill="${L.skin}" stroke="${H}" stroke-width="3"/><rect x="34" y="28" width="12" height="8" rx="2" fill="#59f0ff"/><rect x="54" y="28" width="12" height="8" rx="2" fill="#59f0ff"/><rect x="40" y="44" width="20" height="4" rx="2" fill="${H}"/>`
+      : `<ellipse cx="50" cy="38" rx="22" ry="23" fill="${L.skin}"/><circle cx="42" cy="38" r="2.6" fill="#222"/><circle cx="58" cy="38" r="2.6" fill="#222"/><path d="M44 47 Q50 52 56 47" stroke="#7a3a1d" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="37" cy="45" r="3.5" fill="#ff9a9a" opacity=".45"/><circle cx="63" cy="45" r="3.5" fill="#ff9a9a" opacity=".45"/>`;
+    const acc = {
+      glasses: '<rect x="35" y="33" width="12" height="9" rx="2" fill="none" stroke="#333" stroke-width="2"/><rect x="53" y="33" width="12" height="9" rx="2" fill="none" stroke="#333" stroke-width="2"/><path d="M47 37 h6" stroke="#333" stroke-width="2"/>',
+      round: '<circle cx="42" cy="38" r="6" fill="none" stroke="#555" stroke-width="2"/><circle cx="58" cy="38" r="6" fill="none" stroke="#555" stroke-width="2"/><path d="M48 38 h4" stroke="#555" stroke-width="2"/>',
+      cap: '<path d="M34 18 h32 l-4 -10 h-24z" fill="#fff" stroke="#c9d3e0" stroke-width="2"/><path d="M47 10 h6 M50 7 v6" stroke="#ff6b6b" stroke-width="2.5"/>',
+      mirror: '<path d="M28 22 Q50 14 72 22" stroke="#555" stroke-width="3" fill="none"/><circle cx="50" cy="16" r="7" fill="#e8f2ff" stroke="#888" stroke-width="2"/><circle cx="50" cy="16" r="2" fill="#333"/>',
+      mask: '<path d="M34 44 Q50 40 66 44 L64 56 Q50 60 36 56Z" fill="#cfe9ff" stroke="#8ab" stroke-width="1.5"/>',
+      band: '<path d="M28 26 Q50 16 72 26" stroke="#ff6b6b" stroke-width="5" fill="none"/>',
+      crown: '<path d="M36 14 l4 -10 l6 7 l4 -9 l4 9 l6 -7 l4 10z" fill="#ffd700" stroke="#b08a00" stroke-width="1.5"/>',
+    }[L.acc] || '';
+    const coat = L.coat || '#fff', lab = coat === '#ffffff';
+    return `<svg viewBox="0 0 100 120" width="${size}" height="${size * 1.2}" class="doc">${behind}<path d="M20 120 Q20 70 50 66 Q80 70 80 120Z" fill="${coat}" stroke="#c9d3e0" stroke-width="2"/>${lab ? '<path d="M50 66 L42 120 M50 66 L58 120" stroke="#c9d3e0" stroke-width="2"/>' : '<path d="M40 68 L50 80 L60 68" stroke="#fff" stroke-width="2" fill="none" opacity=".7"/>'}<path d="M40 70 Q34 92 46 96 Q56 98 54 86" stroke="#334" stroke-width="3" fill="none"/><circle cx="54" cy="84" r="4" fill="#9aa"/><rect x="60" y="84" width="10" height="12" rx="2" fill="#7fb3ff"/>${face}${front}${acc}</svg>`;
   }
   // 患者(ベッドに すわっている)
   function patient(look, hurt, size = 96) {
@@ -66,7 +96,7 @@ const ART = (() => {
       <g transform="translate(${L.small ? 8 : 0} ${L.small ? 8 : 0}) scale(${s})"><path d="M28 70 Q30 50 50 48 Q70 50 72 70Z" fill="${L.pj}"/><circle cx="50" cy="36" r="17" fill="${L.skin}"/><path d="M33 32 Q36 18 50 18 Q64 18 67 32 Q58 26 50 27 Q42 26 33 32Z" fill="${L.hair}"/>${look === 'gpa' ? '<circle cx="43" cy="36" r="5" fill="none" stroke="#555" stroke-width="1.5"/><circle cx="57" cy="36" r="5" fill="none" stroke="#555" stroke-width="1.5"/>' : ''}<circle cx="43" cy="36" r="2" fill="#222"/><circle cx="57" cy="36" r="2" fill="#222"/>${mouth}${hurt ? '<rect x="40" y="14" width="20" height="8" rx="3" fill="#bfe3ff"/>' : ''}</g>
       <path d="M2 70 Q60 60 118 70 L118 90 L2 90Z" fill="#b9d3f2"/></svg>`;
   }
-  return { patho, doctor, patient, LOOKS };
+  return { patho, doctor, patient, LOOKS, SKINS, HAIRC, STYLES, COATS, ACCS, lookObj };
 })();
 
 // ---------- 薬の絵(飲み薬・カプセル・点滴・吸入・ぬり薬…。色は ジャンルの色)

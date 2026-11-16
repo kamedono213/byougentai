@@ -35,7 +35,7 @@ const BOOK = (() => {
   function build() {
     pages = [];
     const add = (ch, title, html, keys = '') => pages.push({ ch, title, html, key: kana(title + ' ' + keys) });
-    add('はじめに', '攻略本へ ようこそ', `<div class="row c">${ART.patho(P.flu, 3, 70)}${ART.doctor(S.look, 60)}${ART.patho(P.strep, 3, 70)}</div><p>この本には、ゲームに 出てくる <b>病原体・薬・検査・レリック・イベント・重症化</b>が ぜんぶ のっている。</p><p>右下の →で ページを めくる。<b>目次</b>から とんだり、<b>🔍</b>で さがしたり できる(「抗菌薬」「グラム陰性」「肺」なども さがせる)。</p><p class="note">※ ゲームの中の話。本当の治療は お医者さんが 決める。</p>`, 'はじめに');
+    add('はじめに', '攻略本へ ようこそ', `<div class="row c">${ART.patho(P.flu, 3, 70)}${ART.doctor(S.look, 60)}${ART.patho(P.strep, 3, 70)}</div><p>この本には、ゲームに 出てくる <b>病原体・薬・検査・レリック・イベント・重症化</b>が ぜんぶ のっている。</p><p>右下の →で ページを めくる。薬や 病原体の 絵を <b>タップ</b>すると その ページへ、<b>長おし</b>すると 小窓で 見られる。<b>目次</b>から とんだり、<b>🔍</b>で さがしたり できる(「抗菌薬」「グラム陰性」「肺」なども さがせる)。</p><p class="note">※ ゲームの中の話。本当の治療は お医者さんが 決める。</p>`, 'はじめに');
     COLUMNS.slice(0, 1).forEach(c => add('コラム', '📝 ' + c.t, `<p>${c.b}</p>`, 'コラム ' + c.b));
     // 病原体
     for (const c of ['bac', 'vir', 'fun', 'par']) {
@@ -45,8 +45,8 @@ const BOOK = (() => {
         const C = CLINIC[p.id] || {}, best = (C.best || []).map(id => D[id]);
         const good = DRUGS.filter(d => effOf(d, p) === 2 && !(C.best || []).includes(d.id));
         const so = DRUGS.filter(d => effOf(d, p) === 1);
-        const dl = ds => ds.map(d => `<span class="bdrug" data-k="${esc(d.ja)}">${gi(d).slice(0, 2)}${d.ja}</span>`).join('');
-        add('病原体', p.ja, `${pathoCard(p, { all: true })}<p>✨ <b>第一選択(ばっちり)</b>: ${best.length ? dl(best) : p.noDrug ? '薬は なし → 内視鏡で 取り出す' : p.self ? '特効薬は なし → 体を ささえる' : '—'}</p>${good.length ? `<p>💊 そのほか 効く薬: ${dl(good)}</p>` : ''}${so.length ? `<p>△ 効きにくいことがある: ${dl(so)}</p>` : ''}<p class="note">出てくる所: ${where(p)}</p>`,
+        const dl = ds => ds.map(d => `<span class="bdrug" data-k="${esc(d.ja)}" data-did="${d.id}">${drugArt(d, 30)}${d.ja}</span>`).join('');
+        add('病原体', p.ja, `${pathoCard(p, { all: true, big: true })}<p>✨ <b>第一選択(ばっちり)</b>: ${best.length ? dl(best) : p.noDrug ? '薬は なし → 内視鏡で 取り出す' : p.self ? '特効薬は なし → 体を ささえる' : '—'}</p>${good.length ? `<p>💊 そのほか 効く薬: ${dl(good)}</p>` : ''}${so.length ? `<p>△ 効きにくいことがある: ${dl(so)}</p>` : ''}<p class="note">出てくる所: ${where(p)}</p>`,
           [p.full, CAT[p.cat].ja, p.gram ? GRAM[p.gram] : '', p.place, p.sym, C.hist, best.map(d => d.ja + ' 第一選択').join(' '), good.map(d => d.ja).join(' '), p.resist ? '耐性菌' : '', p.combo ? '併用' : '', p.self ? '特効薬なし' : '', C.rapid ? '迅速検査' : ''].join(' '));
       }
     }
@@ -58,8 +58,8 @@ const BOOK = (() => {
         const bestFor = PATHO.filter(p => !p.base && CLINIC[p.id] && (CLINIC[p.id].best || []).includes(d.id));
         const okFor = PATHO.filter(p => !p.base && effOf(d, p) === 2 && !bestFor.includes(p));
         const soFor = PATHO.filter(p => !p.base && effOf(d, p) === 1);
-        const pl = ps => ps.map(p => `<span class="bdrug" data-k="${esc(p.ja)}">${CAT[p.cat].em}${p.ja}</span>`).join('');
-        add('薬', d.ja, `${drugCard(d)}<p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${d.dmg}(3ターン 効く)` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.guard ? ` ・ 🛡️+${d.guard}` : ''}${d.gutUp ? ` ・ 🥛+${d.gutUp}` : ''}${d.immUp ? ` ・ めんえき+${d.immUp}` : ''}${d.immDown ? ` ・ めんえき-${d.immDown}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️耐性+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
+        const pl = ps => ps.map(p => `<span class="bdrug" data-k="${esc(p.ja)}" data-pid="${p.id}">${ART.patho(p, 3, 30)}${p.ja}</span>`).join('');
+        add('薬', d.ja, `${drugCard(d, 1, { all: true, big: true })}<p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${d.dmg}(3ターン 効く)` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.guard ? ` ・ 🛡️+${d.guard}` : ''}${d.gutUp ? ` ・ 🥛+${d.gutUp}` : ''}${d.immUp ? ` ・ めんえき+${d.immUp}` : ''}${d.immDown ? ` ・ めんえき-${d.immDown}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️耐性+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
           ${bestFor.length ? `<p>✨ 第一選択に なる 相手: ${pl(bestFor)}</p>` : ''}${okFor.length ? `<p>💊 効く 相手: ${pl(okFor)}</p>` : ''}${soFor.length ? `<p>△ 効きにくいことがある: ${pl(soFor)}</p>` : ''}${d.nsaid ? '<p class="warn">⚠️ インフルエンザ・水ぼうそうの時は さける(とくに 子ども)</p>' : ''}`,
           [DCAT[d.cat], d.brand, d.sub, d.cls, d.desc, bestFor.map(p => p.ja).join(' '), okFor.map(p => p.ja).join(' '), d.endless ? 'むげん病院' : ''].join(' '));
       }
@@ -114,7 +114,7 @@ const BOOK = (() => {
     el.querySelector('#bkq').value = q;
     el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const q2 = q; hist.push({ q: q2 }); flip(); show(+b.dataset.i, 'l'); });
   }
-  return { open(key) { if (!pages) build(); SE.play('select'); const j = key ? pages.findIndex(p => p.title === key) : -1; flip(); show(j >= 0 ? j : idx); } };
+  return { open(key, fromHome) { if (!pages) build(); SE.play('select'); const j = key ? pages.findIndex(p => p.title === key) : -1; if (fromHome) hist = j >= 0 ? [0] : []; flip(); show(j >= 0 ? j : fromHome ? 0 : idx); } };
 })();
 
 // ---------- ふりがなが 漢字より 長い時、漢字の間を 広げて となりと 重ならないようにする

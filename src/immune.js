@@ -36,19 +36,23 @@ function dealCells() {
 }
 async function useCell(id) {
   if (!B || B.busy || B.cellUsed) return;
+  if (B.cellExtra) { B.cellExtra = 0; setTimeout(() => { if (B) { B.cellUsed = false; renderBattle(); } }, 50); }
   const R = S.run; let ti = B.tgt; if (!B.foes[ti] || B.foes[ti].hp <= 0) ti = B.foes.findIndex(f => f.hp > 0);
   const f = B.foes[ti], p = P[f.pid];
   const pow = clamp(B.immUp - B.immDown + Math.round(R.hp / R.max * 2), 0, 6);
   const r = CL[id].fx(p, pow, f); B.cellUsed = true; st('cell');
   if (r.immUp) { B.immUp = Math.min(4, B.immUp + r.immUp); SFX.play('guard'); floatTxt('🛡️めんえき UP', null, 'heal'); }
   if (r.guard) { B.guard += r.guard; SFX.play('guard'); floatTxt('🛡️+' + r.guard, null, 'heal'); }
+  if (id === 'anti') { f.mark = 2; if (f.sp === 'tox') f.spDetox = true; floatTxt('🎯 目じるし(薬が 効きやすい)', ti, 'good'); }
+  if (id === 'neut' && f.sp === 'hide') { f.spBroken = true; floatTxt('膜を こわした!', ti, 'good'); }
   if (r.detox) { f.toxin = false; floatTxt('どくそを 消した!', ti, 'good'); }
   if (r.heal) { R.hp = Math.min(R.max, R.hp + r.heal); floatTxt('❤️+' + r.heal, null, 'heal'); }
   if (r.miss) { SFX.play('hitSoft'); renderBattle(); floatTxt('見のがした…', ti, 'bad'); return; }
   if (r.dmg) {
-    let dmg = r.dmg; const blk = Math.min(f.block, dmg); f.block -= blk; dmg -= blk;
+    let dmg = r.dmg; const co = f.dots.length > 0; if (co) dmg = Math.round(dmg * 1.5);
+    const blk = Math.min(f.block, dmg); f.block -= blk; dmg -= blk;
     f.hp = Math.max(0, f.hp - dmg); SFX.play(r.dmg >= 8 ? 'best' : 'hit'); renderBattle(); await fx('hit', ti); floatTxt(`${CL[id].ja} -${dmg}`, ti);
-    if (r.dmg >= 8) banner(`💪 ${CL[id].ja} 大かつやく!`, 'best');
+    if (co) { banner('🤝 薬と めんえきの 協力 コンボ!', 'best'); st('combo'); } else if (r.dmg >= 8) banner(`💪 ${CL[id].ja} 大かつやく!`, 'best');
     if (f.hp <= 0) await killFoe(ti);
   }
   afterAction();

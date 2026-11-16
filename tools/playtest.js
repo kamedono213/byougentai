@@ -47,6 +47,7 @@ const shots = path.join(__dirname, '../shots'); fs.mkdirSync(shots, { recursive:
     const t = await p.evaluate(() => (document.querySelector('.page h3') || {}).textContent || (document.querySelector('.battleScr') ? 'battle' : document.querySelector('.titleScr') ? 'title' : ''));
     if (t && !shotDone[t] && (t.includes('4つ') || t.includes('画面') || t === 'battle')) { shotDone[t] = 1; await shot('02-' + Object.keys(shotDone).length); }
     if (t === 'title' && i > 5) break;
+    if (i % 40 === 0) console.log('tut', i, r, t, await p.evaluate(() => S.tut + ' ' + (typeof B !== 'undefined' && B ? B.mode + ' busy=' + B.busy + ' ap=' + B.ap + ' foes=' + B.foes.map(f => f.pid + f.hp).join() : 'noB') + ' ov=' + !!document.querySelector('.ov') + ' app=' + app.className));
     await sleep(r === 'busy' || r === 'end' ? 500 : 120);
   }
   const tut = await p.evaluate(() => S.tut);
