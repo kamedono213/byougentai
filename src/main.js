@@ -382,6 +382,7 @@ function foeLabel(f) {
   return '<b>???</b>';
 }
 function renderBattle() {
+  if (!B || !S.run) return;
   const R = S.run;
   const foes = B.foes.map((f, i) => {
     const p = P[f.pid]; if (f.hp <= 0) return '';
@@ -648,6 +649,7 @@ function useItem(i) {
   SE.play('ok'); save(); B ? renderBattle() : mapScreen();
 }
 async function playerTurn() {
+  if (!B) return;
   const R = S.run;
   B.turn++; B.ap = B.apMax; B.usedTurn = new Set(); B.busy = false;
   for (const k in B.cd) if (B.cd[k] > 0) B.cd[k]--;
@@ -658,8 +660,9 @@ async function playerTurn() {
   const alive = B.foes.filter(f => f.hp > 0);
   if (B.mode === 'care' && alive.some(f => !f.dots.length && !P[f.pid].self && !P[f.pid].noDrug)) { B.mode = 'rx'; if (B.turn > 1) toast('⌛ 薬が 切れた → 💊 処方を 見なおそう', 2600); }
   renderBattle();
-  for (const f of alive) if (f.sp && !f.spShown) { f.spShown = true; B.auto = false; await cutIn(f); renderBattle(); }
-  if (!B.auto) { await midEvent(); if (R.hp <= 0) return lose(); renderBattle(); }
+  for (const f of alive) if (f.sp && !f.spShown) { f.spShown = true; B.auto = false; await cutIn(f); if (!B) return; renderBattle(); }
+  if (!B) return;
+  if (!B.auto) { await midEvent(); if (!B) return; if (R.hp <= 0) return lose(); renderBattle(); }
   if (B.auto) {
     const a = B.auto; a.turns++;
     const why = B.foes.filter(f => f.hp <= 0).length > a.kills ? '病原体を たおした' : R.hp < a.hp * 0.7 ? '体力が へってきた' : !B.foes.some(f => f.hp > 0 && (f.dots.length || f.self)) ? '薬が 切れた' : a.turns >= 6 ? '6ターン たった' : '';
@@ -668,7 +671,7 @@ async function playerTurn() {
   }
 }
 async function endTurn() {
-  if (B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();
+  if (!B || B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();
   const R = S.run;
   const imm = immPower();
   for (let i = 0; i < B.foes.length; i++) {
@@ -679,7 +682,7 @@ async function endTurn() {
     f.dots = f.dots.filter(x => x.t > 0);
     if (!med && !imm) continue;
     f.hp = Math.max(0, f.hp - med - imm);
-    renderBattle(); await fx('hit', i); floatTxt((med ? '💊-' + med + ' ' : '') + (imm ? '🛡️-' + imm : ''), i);
+    renderBattle(); await fx('hit', i); if (!B) return; floatTxt((med ? '💊-' + med + ' ' : '') + (imm ? '🛡️-' + imm : ''), i);
     if (f.hp <= 0) await killFoe(i);
   }
   if (B.foes.every(f => f.hp <= 0)) { renderBattle(); return win(); }
@@ -712,7 +715,7 @@ async function endTurn() {
   if (R.stage >= 1 && !B.o.tut) B.foes.forEach(planSpecial);
   renderBattle();
   if (B.foes.every(f => f.hp <= 0)) return win();
-  await wait(250); playerTurn();
+  await wait(250); if (B) playerTurn();
 }
 async function win() {
   const R = S.run; B.busy = true;

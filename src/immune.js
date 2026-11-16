@@ -27,6 +27,7 @@ ART.cell = (id, size = 40) => {
 };
 // ターンの はじめに 3まい くばる(相手に 強い 細胞が 1まいは 入りやすい)
 function dealCells() {
+  if (!B) return;
   const f = B.foes.find(x => x.hp > 0); const p = f ? P[f.pid] : null;
   const good = p ? { bac: 'neut', vir: 'killt', fun: 'neut', par: 'eos' }[p.cat] : null;
   const pool = shuffle(CELLS.map(c => c.id));

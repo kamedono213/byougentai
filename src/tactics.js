@@ -58,7 +58,7 @@ const EVENTS_IN = [
   { id: 'dry', good: 0, ja: '脱水ぎみ…', desc: '体力 -2・善玉菌 -1(水分を とろう)', fx: () => { S.run.hp -= 2; S.run.gut = Math.max(0, S.run.gut - 1); } },
 ];
 async function midEvent() {
-  const R = S.run; if (!R || !R.stage || B.o.tut || B.turn < 2) return;
+  const R = S.run; if (!B || !R || !R.stage || B.o.tut || B.turn < 2) return;
   // 重症化は バトル中にも おきることがある(体力が 少ない時)
   if (R.hp < R.max * 0.35 && Math.random() < 0.18 && !B.severeDone) { B.severeDone = true; await severeEvent(); renderBattle(); return; }
   if (Math.random() > 0.22) return;
