@@ -155,6 +155,21 @@ a { color: var(--mute); }
 .rank { margin: 8px auto; font-size: 16px; } .rank b { font-size: 44px; display: block; line-height: 1; } .rS b { color: #ffd34d; text-shadow: 0 0 12px #ffb300; } .rA b { color: #7dffa8; } .rB b { color: #7fc8ff; }
 .scnb { color: #fff; display: grid; gap: 2px; text-align: left; border-radius: 10px; padding: 6px 8px; margin: -6px -8px; font-weight: 800; } .ov .btn.main .scnb .note, .ov .btn .scnb .note { color: inherit; opacity: .8; }
 .btn.endless { background: linear-gradient(180deg,#6b4dff,#3b2bb0); border-color: #b6a6ff; }
+#book { position: fixed; inset: 0; z-index: 45; background: rgba(5,10,20,.85); display: grid; place-items: center; padding: 8px; }
+.bk { width: min(100%, 460px); height: 100%; display: grid; grid-template-rows: auto 1fr auto; gap: 6px; }
+.bktop { display: flex; gap: 6px; align-items: center; } .bktop .txt { flex: 1; min-width: 0; padding: 6px 10px; }
+.bpage { background: #f7f2e6; color: #2a2a2a; border-radius: 8px 16px 16px 8px; padding: 12px 14px; overflow-y: auto; box-shadow: inset 12px 0 16px -10px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.4); border-left: 6px solid #b08960; position: relative; }
+.bpage h3 { margin: 4px 0 8px; color: #b3471a; } .bpage .note { color: #6b6b6b; } .bpage p { margin: 6px 0; font-size: 14px; }
+.bpage.turnl { animation: turnl .35s; transform-origin: left center; } .bpage.turnr { animation: turnr .35s; transform-origin: right center; }
+@keyframes turnl { from { transform: perspective(900px) rotateY(-35deg); opacity: .3; } } @keyframes turnr { from { transform: perspective(900px) rotateY(35deg); opacity: .3; } }
+.bch { position: absolute; right: 10px; top: 6px; font-size: 11px; color: #a07a4a; font-weight: 800; }
+.bnav { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; color: #fff; }
+.bhead { display: flex; gap: 10px; align-items: center; } .bhead > div { display: grid; gap: 3px; justify-items: start; }
+.bgrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 4px; } .bgrid .bjump { display: grid; justify-items: center; font-size: 10.5px; padding: 3px; }
+.blist { display: grid; gap: 4px; } .bjump { background: #fff; border: 1.5px solid #d9c9a6; border-radius: 10px; padding: 6px 10px; text-align: left; color: #2a2a2a; font-weight: 800; display: flex; justify-content: space-between; gap: 6px; }
+.bdrug { display: inline-block; background: #fff; border: 1.5px solid #d9c9a6; border-radius: 8px; padding: 1px 6px; margin: 2px; font-size: 12.5px; font-weight: 800; cursor: pointer; }
+.bpage details { margin: 4px 0; } .bpage summary { cursor: pointer; padding: 4px; }
+.vital { background: #3a1414; border: 1.5px solid #ff6b6b; border-radius: 8px; padding: 6px; font-weight: 800; }
 /* 報酬・ショップ */
 .reward, .shop { display: grid; gap: 8px; }
 /* 図鑑 */
