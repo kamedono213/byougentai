@@ -347,7 +347,7 @@ async function introFoes() {
     f.first = false;
     SFX.play('newFoe');
     const effD = DRUGS.filter(d => effOf(d, p) === 2 && learned(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p)).slice(0, 4);
-    await modal(`<div class="meet"><span class="meet-new">NEW!</span>${ART.patho(p, 3, 120)}</div><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].em} ${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span><b class="big">${p.ja}</b><p class="note">📍${p.place} 🤒${p.sym}</p>${p.noDrug ? '<p>💊 薬は 効かない → <b>内視鏡</b>で とり出そう</p>' : p.self ? '<p>💊 特効薬は ない → 体を ささえて めんえきを 待とう</p>' : `<p class="meet-d">💊 ${effD.map(d => `<span class="mini ${isBest(d, p) ? 'best' : ''}">${ART.drug(d, 36)}<b>${d.ja}</b></span>`).join('')}</p>`}${p.combo ? '<p class="warn">🤝 2つ以上を 同じターンに 使おう(併用)</p>' : ''}${give ? `<p class="got">🎁 <b>${give.ja}</b>を おぼえた!</p>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p></details><p class="note">次からは 自分で 思い出して たたかおう!</p>`, ['たたかう!']);
+    await modal(`<div class="meet"><span class="meet-new">NEW!</span>${ART.patho(p, 3, 120)}</div><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].em} ${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span><b class="big">${p.ja}</b><p class="note">📍${p.place} 🤒${p.sym}</p>${p.noDrug ? '<p>💊 薬は 効かない → <b>内視鏡</b>で とり出そう</p>' : p.self ? '<p>💊 特効薬は ない → 体を ささえて めんえきを 待とう</p>' : `<p class="meet-d">💊 ${effD.map(d => `<span class="mini ${isBest(d, p) ? 'best' : ''}">${drugArt(d, 36)}<b>${d.ja}</b></span>`).join('')}</p>`}${p.combo ? '<p class="warn">🤝 2つ以上を 同じターンに 使おう(併用)</p>' : ''}${give ? `<p class="got">🎁 <b>${give.ja}</b>を おぼえた!</p>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p></details><p class="note">次からは 自分で 思い出して たたかおう!</p>`, ['たたかう!']);
   }
   save();
 }
@@ -392,7 +392,7 @@ function renderBattle() {
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
         <button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
       <div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
-      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${ART.drug(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
+      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${drugArt(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
       <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : (B.ap ? '<span class="note">薬 → 病原体を タップ。長おしで カード</span>' : '<span class="note warn">処方ポイントが なくなった。ターン終了を おそう</span>')}</div>
     </div>`, 'battleScr', true);
   const dr = $('.drugs'); if (dr) dr.scrollTop = keepS; window.scrollTo(0, keepY);
@@ -419,6 +419,7 @@ async function drugInfo(id, canUse) {
   if (canUse && B && !B.busy) { const off = (B.cd[id] || 0) > 0 || B.usedTurn.has(id) || B.ap < d.cost; const r = await modal(body, off ? ['とじる'] : ['つかう', 'とじる']); if (!off && r === 0) useDrug(id); }
   else modal(body, ['とじる']);
 }
+const drugArt = (d, size) => d.cat === 'sup' ? ART.drug(d, size) : ART.hero(d, size);
 const dCol = d => d.cat === 'sup' ? '#ff8fa3' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col;
 const stars = d => d.endless || d.cost >= 3 ? 3 : d.cost === 2 ? 2 : 1;
 function bar(label, v, max, col) { const n = Math.round(clamp(v / max, 0, 1) * 5); return `<div class="dbar"><span>${label}</span><i>${('<b style="background:' + col + '"></b>').repeat(n)}${'<b></b>'.repeat(5 - n)}</i></div>`; }
@@ -427,7 +428,7 @@ function drugCard(d, lv = 1) {
   const best = new Set(PATHO.filter(p => isBest(d, p)).map(p => p.id));
   const sorted = targets.sort((a, b) => best.has(b.id) - best.has(a.id));
   return `<div class="dcard" style="--c:${dCol(d)}"><div class="dc-top"><span class="dc-cost">${'●'.repeat(d.cost)}</span><span class="dc-genre">${GI[d.cat]}</span><span class="dc-star">${'★'.repeat(stars(d))}${'☆'.repeat(3 - stars(d))}</span></div>
-    <div class="dc-art">${ART.drug(d, 92)}</div><b class="dc-name">${d.ja}</b><span class="dc-sub">${[d.brand, FORM_JA[FORM[d.id]]].filter(Boolean).join('・')}</span>
+    <div class="dc-art">${drugArt(d, 92)}</div><b class="dc-name">${d.ja}</b>${famOf(d.id) ? `<span class="dc-fam">👥 ${famOf(d.id).f.ja}</span>` : ''}<span class="dc-sub">${[d.brand, FORM_JA[FORM[d.id]]].filter(Boolean).join('・')}</span>
     <div class="dc-stats">${d.dmg ? bar('⚔️ つよさ', dmgOf(d, lv), 20, '#ff6b6b') : bar('❤️ かいふく', (d.heal || 0) + (d.guard || 0) / 2 + (d.gutUp || 0) + (d.immUp || 0) * 2, 10, '#ff8fa3')}${bar('🥛 おなかに やさしい', 4 - (d.gut || 0), 4, '#6bd18c')}${bar('🌱 耐性に なりにくい', 4 - (d.rsk || 0), 4, '#7fc8ff')}</div>
     ${sorted.length ? `<div class="dc-foes"><span>とくいな 相手</span><div>${sorted.slice(0, 10).map(p => `<span class="dc-foe ${best.has(p.id) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(p.ja)}">${ART.patho(p, S.seen[p.id] ? 3 : 0, 34)}${best.has(p.id) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : ''}
     <p class="dc-desc">${d.desc}</p><details class="dc-more"><summary>📝 もっと 知る</summary><p>${d.fact}</p><p class="note">${d.cls}${d.sub ? '・' + d.sub : ''}</p></details></div>`;
@@ -445,7 +446,7 @@ function pathoCard(p, opt = {}) {
     <div class="dc-place"><span>📍${p.place}</span><span>🤒${p.sym}</span></div>
     <div class="dc-stats">${bar('⚔️ こうげき', atk, 9, '#ff6b6b')}${bar('❤️ タフさ', p.hp, 60, '#ff9f43')}${bar('⬆️ ふえる 力', grow, 10, '#c59bff')}</div>
     ${skill.length ? `<div class="dc-skill">${skill.map(s => `<span>${s}</span>`).join('')}</div>` : ''}
-    ${drugs.length ? `<div class="dc-foes"><span>${p.noDrug ? '' : '効く 薬'}</span><div>${drugs.slice(0, 10).map(d => `<span class="dc-foe ${isBest(d, p) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(d.ja)}">${learned(d.id) || opt.all ? ART.drug(d, 32) : '<span class="q">?</span>'}${isBest(d, p) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : `<p class="dc-desc">${p.self ? '💊 特効薬は ない → 体を ささえて めんえきを 待とう' : ''}</p>`}
+    ${drugs.length ? `<div class="dc-foes"><span>${p.noDrug ? '' : '効く 薬'}</span><div>${drugs.slice(0, 10).map(d => `<span class="dc-foe ${isBest(d, p) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(d.ja)}">${learned(d.id) || opt.all ? drugArt(d, 32) : '<span class="q">?</span>'}${isBest(d, p) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : `<p class="dc-desc">${p.self ? '💊 特効薬は ない → 体を ささえて めんえきを 待とう' : ''}</p>`}
     ${C.hist ? `<details class="dc-more"><summary>🗣️ 問診の ヒント</summary><p>${C.hist}</p></details>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p>${C.rapid ? '<p class="note">🧪 迅速検査で わかる</p>' : ''}</details>
     ${opt.kills != null ? `<p class="note">たおした数: ${opt.kills}</p>` : ''}</div>`;
 }
@@ -697,8 +698,8 @@ function rewardScreen(node) {
   save();
   screen(`${topBar('ほうしゅう', null)}${statusBar(R)}<div class="reward"><p>🪙 ${coin} コイン ゲット!</p>${relic ? `<p class="got">${relic.em} <b>${relic.ja}</b> を 手に入れた!<br><span class="note">${relic.desc}</span></p>` : ''}
     <p>1つ えらぼう:</p>${opts.map((o, i) => {
-      if (o.k === 'learn') { const d = D[o.id]; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${ART.drug(d, 46)}<span><span class="note">🎁 新しい薬</span><b>${d.ja}</b><span class="note">${GI[d.cat]}・${'★'.repeat(stars(d))}</span></span></button>`; }
-      if (o.k === 'up') { const d = D[o.id]; const lv = R.lv[d.id] || 1; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${ART.drug(d, 46)}<span><span class="note">⬆️ 強くする Lv${lv}→${lv + 1}</span><b>${d.ja}</b><span class="note">⚔️ ${dmgOf(d, lv)} → ${dmgOf(d, lv + 1)}</span></span></button>`; }
+      if (o.k === 'learn') { const d = D[o.id]; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">🎁 新しい薬</span><b>${d.ja}</b><span class="note">${GI[d.cat]}・${'★'.repeat(stars(d))}</span></span></button>`; }
+      if (o.k === 'up') { const d = D[o.id]; const lv = R.lv[d.id] || 1; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">⬆️ 強くする Lv${lv}→${lv + 1}</span><b>${d.ja}</b><span class="note">⚔️ ${dmgOf(d, lv)} → ${dmgOf(d, lv + 1)}</span></span></button>`; }
       return `<button class="btn opt optd" data-o="${i}"><span class="bigem">${IT[o.id].em}</span><span><span class="note">🎒 アイテム</span><b>${IT[o.id].ja}</b><span class="note">${IT[o.id].desc}</span></span></button>`;
     }).join('')}<button class="btn" id="skip">いらない</button></div>`);
   bindStatus(false);
@@ -741,7 +742,7 @@ function shopScreen() {
     R.shop = { f: R.fl, list: [...ITEMS.map(i => ({ k: 'item', id: i.id, price: i.price })), rel && { k: 'relic', id: rel.id, price: rel.rare ? 110 : 70 }, ...ups.map(d => ({ k: 'up', id: d.id, price: 40 })), nd && { k: 'learn', id: nd, price: 45 }, { k: 'heal', price: 20 }, { k: 'gut', price: 15 }].filter(Boolean), sold: [] };
   }
   const L = R.shop;
-  const name = o => o.k === 'item' ? `<span class="bigem">${IT[o.id].em}</span><b>${IT[o.id].ja}</b><span class="note">${IT[o.id].desc}</span>` : o.k === 'relic' ? `<span class="bigem">${RL(o.id).em}</span><b>${RL(o.id).ja}</b><span class="note">ずっと効く: ${RL(o.id).desc}</span>` : o.k === 'up' ? `${ART.drug(D[o.id], 44)}<b>${D[o.id].ja}</b><span class="note">⬆️ 強くする Lv${R.lv[o.id] || 1}→${(R.lv[o.id] || 1) + 1}</span>` : o.k === 'learn' ? `${ART.drug(D[o.id], 44)}<b>${D[o.id].ja}</b><span class="note">🎁 新しい薬・${GI[D[o.id].cat]}</span>` : o.k === 'heal' ? '<span class="bigem">💧</span><b>点滴で 休む</b><span class="note">体力 +12</span>' : '<span class="bigem">🥛</span><b>ヨーグルト</b><span class="note">善玉菌 +5</span>';
+  const name = o => o.k === 'item' ? `<span class="bigem">${IT[o.id].em}</span><b>${IT[o.id].ja}</b><span class="note">${IT[o.id].desc}</span>` : o.k === 'relic' ? `<span class="bigem">${RL(o.id).em}</span><b>${RL(o.id).ja}</b><span class="note">ずっと効く: ${RL(o.id).desc}</span>` : o.k === 'up' ? `${drugArt(D[o.id], 44)}<b>${D[o.id].ja}</b><span class="note">⬆️ 強くする Lv${R.lv[o.id] || 1}→${(R.lv[o.id] || 1) + 1}</span>` : o.k === 'learn' ? `${drugArt(D[o.id], 44)}<b>${D[o.id].ja}</b><span class="note">🎁 新しい薬・${GI[D[o.id].cat]}</span>` : o.k === 'heal' ? '<span class="bigem">💧</span><b>点滴で 休む</b><span class="note">体力 +12</span>' : '<span class="bigem">🥛</span><b>ヨーグルト</b><span class="note">善玉菌 +5</span>';
   screen(`${topBar('🏪 ショップ', null)}${statusBar(R)}<div class="shop">${L.list.map((o, i) => `<button class="btn opt stile" data-b="${i}" ${L.sold.includes(i) || R.coins < o.price ? 'disabled' : ''}>${name(o)}<em>${L.sold.includes(i) ? '売りきれ' : '🪙' + o.price}</em></button>`).join('')}<button class="btn main" id="out">店を出る</button></div>`);
   bindStatus(false);
   app.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
@@ -772,7 +773,7 @@ function restScreen() {
 }
 function upgradePick(done) {
   const R = S.run; const ups = DRUGS.filter(d => learned(d.id) && d.dmg && (R.lv[d.id] || 1) < 4);
-  screen(`${topBar('どの薬を 強くする?', null)}<div class="reward">${ups.map(d => `<button class="btn opt optd" data-u="${d.id}" style="--c:${dCol(d)}">${ART.drug(d, 40)}<span><b>${d.ja}</b><span class="note">Lv${R.lv[d.id] || 1}→${(R.lv[d.id] || 1) + 1} ・ ⚔️${dmgOf(d, R.lv[d.id] || 1)}→${dmgOf(d, (R.lv[d.id] || 1) + 1)}</span></span></button>`).join('')}</div>`);
+  screen(`${topBar('どの薬を 強くする?', null)}<div class="reward">${ups.map(d => `<button class="btn opt optd" data-u="${d.id}" style="--c:${dCol(d)}">${drugArt(d, 40)}<span><b>${d.ja}</b><span class="note">Lv${R.lv[d.id] || 1}→${(R.lv[d.id] || 1) + 1} ・ ⚔️${dmgOf(d, R.lv[d.id] || 1)}→${dmgOf(d, (R.lv[d.id] || 1) + 1)}</span></span></button>`).join('')}</div>`);
   app.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { SE.play('ok'); R.lv[b.dataset.u] = (R.lv[b.dataset.u] || 1) + 1; save(); done(); });
 }
 async function treasureScreen() {
@@ -807,7 +808,7 @@ function zukan(tab) {
   const pz = PATHO.filter(p => !p.base);
   const body = tab === 'p'
     ? `<div class="zgrid">${pz.map(p => { const s = S.seen[p.id], k = S.kills[p.id] || 0; return `<button class="zc ${s ? '' : 'no'}" data-zp="${p.id}" ${s ? '' : 'disabled'}>${ART.patho(p, s ? 3 : 0, 58)}<b>${s ? p.ja : '???'}</b>${s ? `<span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].ja}</span><span class="note">たおした ${k}</span>` : ''}</button>`; }).join('')}</div>`
-    : `<div class="zlist">${['abx', 'vir', 'fun', 'par', 'sup'].map(c => `<h4>${GI[c]} <span class="note">${DRUGS.filter(d => d.cat === c && learned(d.id)).length}/${DRUGS.filter(d => d.cat === c).length}</span></h4><div class="zdg">${DRUGS.filter(d => d.cat === c).map(d => learned(d.id) ? `<button class="zdc" data-zd="${d.id}" style="--c:${dCol(d)}">${ART.drug(d, 44)}<b>${d.ja}</b><span class="dc-star">${'★'.repeat(stars(d))}</span></button>` : '<div class="zdc no"><span class="q">?</span><b>???</b></div>').join('')}</div>`).join('')}</div>`;
+    : `<div class="zlist">${['abx', 'vir', 'fun', 'par', 'sup'].map(c => `<h4>${GI[c]} <span class="note">${DRUGS.filter(d => d.cat === c && learned(d.id)).length}/${DRUGS.filter(d => d.cat === c).length}</span></h4><div class="zdg">${DRUGS.filter(d => d.cat === c).map(d => learned(d.id) ? `<button class="zdc" data-zd="${d.id}" style="--c:${dCol(d)}">${drugArt(d, 44)}<b>${d.ja}</b><span class="dc-star">${'★'.repeat(stars(d))}</span></button>` : '<div class="zdc no"><span class="q">?</span><b>???</b></div>').join('')}</div>`).join('')}</div>`;
   screen(`${topBar('図鑑', title)}<div class="tabs big"><button class="tab ${tab === 'p' ? 'on' : ''}" data-zt="p">🦠 病原体 ${pz.filter(p => S.seen[p.id]).length}/${pz.length}</button><button class="tab ${tab === 'd' ? 'on' : ''}" data-zt="d">💊 薬 ${DRUGS.filter(d => learned(d.id)).length}/${DRUGS.length}</button></div>${body}`);
   bindBack(title);
   app.querySelectorAll('[data-zt]').forEach(b => b.onclick = () => { SE.play('select'); zukan(b.dataset.zt); });

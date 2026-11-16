@@ -3,7 +3,7 @@
 const fs = require('fs'), path = require('path');
 const REF = 'D:/onze.ltd/reference';
 const rd = f => fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n');
-const src = ['data.js', 'endless.js', 'clinic.js', 'exams.js', 'art.js', 'sfx.js', 'main.js', 'lessons.js', 'severe.js', 'book.js', 'cloud.js'].map(f => rd(path.join(__dirname, '../src', f))).join('\n');
+const src = ['data.js', 'endless.js', 'clinic.js', 'exams.js', 'art.js', 'heroes.js', 'sfx.js', 'main.js', 'lessons.js', 'severe.js', 'book.js', 'cloud.js'].map(f => rd(path.join(__dirname, '../src', f))).join('\n');
 const out = "'use strict';\n" + rd(REF + '/leave-confirm-snippet.js') + '\n' + rd(REF + '/furigana-runtime.js') + '\n' + rd(REF + '/se-snippet.js') + '\n' + src;
 fs.writeFileSync(path.join(__dirname, '../app/app.js'), out);
 console.log('app.js', out.length);
