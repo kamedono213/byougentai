@@ -371,6 +371,16 @@ const DRUGS = [
     desc: '水分と塩分をすばやく補う。げり・はくときにいちばん大事。患者の体力を回復する。', fact: 'ふつうの水やお茶より、体にすばやく吸収されるように作られている。' },
   { id: 'apap', ja: 'アセトアミノフェン', brand: 'カロナール', cls: '解熱鎮痛薬', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 4, guard: 3, gut: 0, rsk: 0, eff: {},
     desc: '熱やいたみをやわらげて、患者を楽にする(病原体はやっつけない)。次のこうげきを少しへらす。', fact: '子どもの熱にもよく使われる薬。' },
+  { id: 'drip', ja: '点滴(輸液)', cls: '体をささえる', cat: 'sup', cost: 2, cd: 1, dmg: 0, heal: 9, gut: 0, rsk: 0, eff: {},
+    desc: '血管から 水分と 塩分・栄養を 入れて、体力を 大きく 回復する。', fact: '口から 飲めないほど ぐったりした時に 使う。' },
+  { id: 'loxo', ja: 'ロキソプロフェン', brand: 'ロキソニン', cls: '解熱鎮痛薬(NSAIDs)', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 6, guard: 3, hurt: 1, gut: 0, rsk: 0, eff: {},
+    desc: '熱と いたみを しっかり おさえる。ただし 胃が あれやすい(副作用 ❤️-1)。', fact: '子どもの 熱には ふつう アセトアミノフェンが 使われる。' },
+  { id: 'pred', ja: 'プレドニゾロン', cls: 'ステロイド', cat: 'sup', cost: 1, cd: 2, dmg: 0, heal: 8, guard: 5, imm: 5, gut: 0, rsk: 0, eff: {},
+    desc: '炎症を 強く おさえて 体を 楽にする。でも <b>めんえきも 下げる</b> ので、病原体が ふえてしまう(敵の体力 +5)。', fact: 'ステロイドは よく効く 大事な薬。でも 感染症の時は 使い方に 注意が いる。' },
+  { id: 'bif', ja: '整腸剤', sub: 'ビフィズス菌・酪酸菌など', brand: 'ビオフェルミン・ミヤBM', cls: '体をささえる', cat: 'sup', cost: 1, cd: 0, dmg: 0, heal: 2, gutUp: 3, gut: 0, rsk: 0, eff: {},
+    desc: 'おなかの 善玉菌を ふやす(善玉菌 +3)。', fact: '抗菌薬と いっしょに 出されることが 多い。' },
+  { id: 'o2', ja: '酸素', cls: '体をささえる', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 1, guard: 6, gut: 0, rsk: 0, eff: {},
+    desc: '息を 楽にして、次の こうげきを 大きく へらす(🛡️+6)。', fact: '肺の 病気で 血液の 酸素が へった時に 使う。' },
   { id: 'endo', ja: '内視鏡', cls: '処置', cat: 'sup', cost: 2, cd: 1, dmg: 0, gut: 0, rsk: 0, eff: { anisakis: 2 }, fixed: 99,
     desc: '胃カメラ。アニサキスを直接つまんで取り出す。', fact: '薬ではなく、取り出すことで治す病気もある。' },
 ];
@@ -459,6 +469,10 @@ const ITEMS = [
   { id: 'probio', em: '🫙', ja: 'プロバイオティクス', desc: '善玉菌 +4', price: 30 },
   { id: 'drink', em: '🥤', ja: '栄養ドリンク', desc: '患者の体力 +10', price: 30 },
   { id: 'rapid', em: '🧪', ja: '迅速検査キット', desc: '処方ポイントを使わずに 検査できる', price: 20 },
+  { id: 'okayu', em: '🍚', ja: 'おかゆ', desc: '患者の体力 +8・善玉菌 +1', price: 25 },
+  { id: 'sports', em: '🧃', ja: 'スポーツドリンク', desc: '患者の体力 +6', price: 15 },
+  { id: 'sweets', em: '🍩', ja: 'お菓子の山', desc: '患者の体力 +14。でも 善玉菌 -2(かたよった 食事)', price: 20 },
+  { id: 'energy', em: '⚡', ja: 'エナジードリンク', desc: '処方ポイント +2(このターン)。でも 夜 ねむれず めんえき ダウン(敵の体力 +4)', price: 25 },
 ];
 const IT = Object.fromEntries(ITEMS.map(i => [i.id, i]));
 
@@ -486,6 +500,12 @@ const EVENTS = [
   { id: 'wash', ja: '手洗い教室', text: '子どもたちに 手洗いを 教えてほしいと たのまれた。',
     choices: [['ていねいに 教える', { relic: 'soap', msg: '石けんで 30秒、指の間・つめ・手首まで。手洗いせっけんを 手に入れた!' }],
       ['いそがしいので ことわる', { coins: 15, msg: '15コイン' }]] },
+  { id: 'night', ja: '夜ふかし', text: '患者さんが「ねむれないから、夜おそくまで ゲームしてもいい?」と 聞いてきた。',
+    choices: [['早く ねようね、と 伝える', { heal: 6, msg: 'ねむりは めんえきを 守る。体力 +6' }],
+      ['今日だけ いいよ', { coins: 15, imm: 2, msg: 'ねぶそくで めんえきが 下がった…。次の 2回の バトルは 病原体が 強い。15コイン' }]] },
+  { id: 'stress', ja: 'いそがしい毎日', text: '仕事が いそがしくて、食事も ねむりも 足りていない 患者さん。',
+    choices: [['しっかり 休むよう すすめる', { heal: 8, coins: -5, msg: '休むのも 治療のうち。体力 +8' }],
+      ['がんばって もらう', { coins: 20, imm: 2, msg: 'つかれと ストレスで めんえきが 下がった…。次の 2回の バトルは 病原体が 強い。20コイン' }]] },
   { id: 'yogurt', ja: 'おなかの話', text: '「抗菌薬を飲むと、おなかが ゆるくなるのは なぜ?」と聞かれた。',
     choices: [['善玉菌の話をする', { gut: 4, msg: '抗菌薬は おなかの いい菌も へらす。だから ねらいの せまい薬が 大事。善玉菌 +4' }],
       ['わからない', { coins: 5, msg: '5コイン' }]] },
@@ -925,6 +945,7 @@ function stageSelect() {
 }
 function newRun(stage, asc = 0) {
   const pt = stage ? PATIENTS[STAGES[stage - 1].patient] : PATIENTS.kid;
+  if (stage >= 1) learn('apap', true); if (stage >= 2) learn('bif', true);
   const R = { stage, asc, hp: pt.hp, max: pt.hp, gut: 10, resist: 0, coins: 30, relics: [], items: stage ? ['hint'] : [], lv: {}, pos: null, map: stage ? makeMap(stage) : null, wrong: 0, hintUsed: 0, mepm: 0, gutZero: 0, fl: 0 };
   return R;
 }
@@ -936,6 +957,7 @@ function SG(R) {
   const s = SC[R.scn] || SCN[0];
   return { n: 9, ja: `むげん病院 ${R.act}幕 ${s.em}${s.ja}`, patient: s.patient, test: s.test, bg: s.bg, enemies: s.pool, elites: s.elites, boss: [R.bossId || s.boss[0]] };
 }
+const GI = { abx: '🦠抗菌', vir: '🧬抗ウイルス', fun: '🍄抗真菌', par: '🪱抗寄生虫', sup: '❤️ささえる' };
 const NODE = { fork: ['🧭', '分かれ道'], battle: ['⚔️', 'バトル'], elite: ['🔥', '強敵'], event: ['❓', 'イベント'], shop: ['🏪', 'ショップ'], rest: ['🛏️', '休けい'], treasure: ['🎁', '宝箱'], boss: ['👑', 'ボス'] };
 function makeMap(stage) {
   const H = stage === 1 ? 9 : stage === 9 ? 13 : 11, floors = [];
@@ -973,7 +995,7 @@ function bindStatus(inBattle) {
   app.querySelectorAll('[data-r]').forEach(e => e.onclick = () => { const r = RL(e.dataset.r); modal(`<b>${r.em} ${r.ja}</b><p>${r.desc}</p>`, ['OK']); });
   app.querySelectorAll('[data-it]').forEach(e => e.onclick = async () => {
     const R = S.run, i = +e.dataset.it, it = IT[R.items[i]];
-    const usable = inBattle || it.id === 'drink' || it.id === 'probio';
+    const usable = inBattle || ['drink', 'probio', 'okayu', 'sports', 'sweets'].includes(it.id);
     if (!usable) return modal(`<b>${it.em} ${it.ja}</b><p>${it.desc}</p><p class="note">バトルの中で 使えるよ</p>`, ['OK']);
     if (await ask(`<b>${it.em} ${it.ja}</b><p>${it.desc}</p>`, 'つかう')) useItem(i);
   });
@@ -1046,6 +1068,7 @@ function makeFoe(pid, node, known) {
   if (R.relics.includes('steth')) k = Math.max(k, 1);
   if (!sg) k = known != null ? known : k;
   let h = hp; if (R.relics.includes('soap')) h = Math.ceil(h * 0.9);
+  if (R.imm > 0) h = Math.round(h * 1.2);
   return { pid, hp: h, max: hp, atkAdd, k, pi: 0, block: 0, toxin: false, self: p.self ? p.self + (R.asc >= 3 ? 1 : 0) : 0, combo: new Set(), first, conv };
 }
 function startBattle(o) {
@@ -1053,6 +1076,7 @@ function startBattle(o) {
   R.snap = JSON.stringify({ hp: R.hp, gut: R.gut, resist: R.resist, items: R.items, coins: R.coins });
   B = { o, foes: o.foes.map(pid => makeFoe(pid, o.node, o.known)), turn: 0, ap: 0, apMax: 3 + (R.relics.includes('coat') ? 1 : 0), cd: {}, usedTurn: new Set(), sel: null, tgt: 0, guard: 0, free: R.relics.includes('loupe') ? 1 : 0, dmgTaken: 0, wrong: 0, abxOnSelf: false, cdSpawned: false, busy: false, log: [] };
   if (R.relics.includes('thermo')) R.hp = Math.min(R.max, R.hp + 3);
+  if (R.imm > 0) { R.imm--; setTimeout(() => toast('😪 めんえきが 下がっていて、病原体が 強い…', 2600), 400); }
   if (R.cdNext && o.node !== 'boss' && !o.tut) { R.cdNext = false; B.foes = [B.foes[0], makeFoe('cdiff', 'battle', 0)]; B.foes[1].k = 3; B.foes[1].first = false; }
   save(); introFoes().then(async () => { if (B.foes.some(f => f.pid === 'cdiff') && !B.o.cdShown) { B.o.cdShown = 1; await cdHelp('前の治療で 善玉菌が へって、ディフィシル菌が ふえていた!'); } playerTurn(); });
 }
@@ -1118,7 +1142,7 @@ function renderBattle() {
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
         <button class="btn sm end" id="end">ターン終了</button></div>
       <div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
-      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}"><span class="cost">${d.cost}</span><b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${d.brand ? `<span class="cls">${d.brand}</span>` : ''}${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
+      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}"><span class="cost">${d.cost}</span><b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${d.brand ? `<span class="cls">${d.brand}</span>` : ''}<span class="gi">${GI[d.cat]}</span>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
       <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : '<span class="note">薬を タップで えらぶ・長おしで せつめい</span>'}</div>
     </div>`, 'battleScr');
   bindStatus(true);
@@ -1142,7 +1166,7 @@ async function drugInfo(id, canUse) {
   const d = D[id], R = S.run, lv = R ? (R.lv[id] || 1) : 1;
   const known = PATHO.filter(p => !p.base && effOf(d, p) && S.seen[p.id]);
   const body = `<span class="tag" style="background:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}">${DCAT[d.cat]}</span><b class="big">${d.ja}</b>${d.brand ? `<span class="note">商品名の れい: ${d.brand}</span>` : ''}${d.sub ? `<span class="note">正式名: ${d.sub}</span>` : ''}<span class="note">${d.cls}</span>
-    <p>${d.desc}</p><p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${dmgOf(d, lv)}` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}ターン` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
+    <p>${d.desc}</p><p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${dmgOf(d, lv)}` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.guard ? ` ・ 🛡️+${d.guard}` : ''}${d.gutUp ? ` ・ 🥛+${d.gutUp}` : ''}${d.imm ? ` ・ ⚠️敵+${d.imm}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}ターン` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
     ${known.length ? `<p class="note">効いた相手(図鑑より): ${known.map(p => p.ja + (effOf(d, p) === 1 ? '(△)' : '')).join('・')}</p>` : ''}<p class="note">📝 ${d.fact}</p>`;
   if (canUse && B && !B.busy) { const off = (B.cd[id] || 0) > 0 || B.usedTurn.has(id) || B.ap < d.cost; const r = await modal(body, off ? ['とじる'] : ['つかう', 'とじる']); if (!off && r === 0) useDrug(id); }
   else modal(body, ['とじる']);
@@ -1158,9 +1182,12 @@ async function useDrug(id) {
   B.ap -= d.cost; B.usedTurn.add(id); if (d.cd) B.cd[id] = d.cd + 1; B.sel = null;
   S.used[id] = (S.used[id] || 0) + 1;
   const lv = R.lv[id] || 1;
-  if (d.heal || d.guard) {
+  if (d.heal || d.guard || d.gutUp) {
     if (d.heal) { R.hp = Math.min(R.max, R.hp + d.heal + (lv - 1) * 2); floatTxt('❤️+' + (d.heal + (lv - 1) * 2), null, 'heal'); }
     if (d.guard) B.guard += d.guard;
+    if (d.gutUp) R.gut = Math.min(10, R.gut + d.gutUp);
+    if (d.hurt) { R.hp -= d.hurt; toast(`💊 ${d.ja}の 副作用 ❤️-${d.hurt}`); }
+    if (d.imm) { B.foes.forEach(f => { if (f.hp > 0) { f.hp = Math.min(Math.round(f.max * 1.2), f.hp + d.imm); if (f.self) f.self++; } }); toast('⚠️ めんえきが 下がって、病原体が ふえた!', 2600); }
     SE.play('ok'); renderBattle(); return afterAction();
   }
   // 抗菌薬の 体への えいきょう(善玉菌・耐性)
@@ -1248,6 +1275,10 @@ function useItem(i) {
   R.items.splice(i, 1);
   if (it === 'probio') R.gut = Math.min(10, R.gut + 4);
   if (it === 'drink') R.hp = Math.min(R.max, R.hp + 10);
+  if (it === 'okayu') { R.hp = Math.min(R.max, R.hp + 8); R.gut = Math.min(10, R.gut + 1); }
+  if (it === 'sports') R.hp = Math.min(R.max, R.hp + 6);
+  if (it === 'sweets') { R.hp = Math.min(R.max, R.hp + 14); R.gut = Math.max(0, R.gut - 2); toast('🍩 体力は もどったけど、善玉菌が へった…'); }
+  if (it === 'energy') { if (!B) { R.items.splice(i, 0, it); return; } B.ap += 2; B.foes.forEach(f => { if (f.hp > 0) f.hp = Math.min(Math.round(f.max * 1.2), f.hp + 4); }); toast('⚡ 処方ポイント +2! でも めんえきが 下がって 病原体が ふえた'); }
   SE.play('ok'); save(); B ? renderBattle() : mapScreen();
 }
 async function playerTurn() {
@@ -1310,7 +1341,7 @@ async function lose() {
 function rewardPool(R) {
   const sg = SG(R);
   const want = new Set(); [...sg.enemies, ...sg.elites, ...sg.boss].forEach(pid => DRUGS.forEach(d => { if (effOf(d, P[pid])) want.add(d.id); }));
-  ['apap', 'ors'].forEach(x => want.add(x));
+  ['apap', 'ors', 'drip', 'loxo', 'pred', 'bif', 'o2'].forEach(x => want.add(x));
   if (R.stage === 9) DRUGS.filter(d => d.endless).forEach(d => want.add(d.id));
   return [...want].filter(id => !learned(id));
 }
@@ -1425,6 +1456,7 @@ async function eventScreen() {
   if (c.coins) R.coins += c.coins; if (c.resist) R.resist = Math.max(0, R.resist + c.resist); if (c.gut) R.gut = clamp(R.gut + c.gut, 0, 10);
   if (c.heal) R.hp = Math.min(R.max, R.hp + c.heal); if (c.hurt) R.hp = Math.max(1, R.hp - c.hurt);
   if (c.item && R.items.length < 3) R.items.push(c.item);
+  if (c.imm) R.imm = (R.imm || 0) + c.imm;
   if (c.relic && !R.relics.includes(c.relic)) R.relics.push(c.relic);
   if (c.upgrade && learned(c.upgrade)) R.lv[c.upgrade] = (R.lv[c.upgrade] || 1) + 1;
   save(); SE.play(c.fight ? 'ng' : 'ok');
