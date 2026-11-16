@@ -308,7 +308,8 @@ function startBattle(o) {
   R.snap = JSON.stringify({ hp: R.hp, gut: R.gut, resist: R.resist, items: R.items, coins: R.coins });
   B = { o, foes: o.foes.map(pid => makeFoe(pid, o.node, o.known)), turn: 0, ap: 0, apMax: 3 + (R.relics.includes('coat') ? 1 : 0), cd: {}, usedTurn: new Set(), sel: null, tgt: 0, guard: 0, free: R.relics.includes('loupe') ? 1 : 0, dmgTaken: 0, wrong: 0, abxOnSelf: false, cdSpawned: false, busy: false, log: [] };
   if (R.relics.includes('thermo')) R.hp = Math.min(R.max, R.hp + 3);
-  save(); introFoes().then(() => playerTurn());
+  if (R.cdNext && o.node !== 'boss' && !o.tut) { R.cdNext = false; B.foes = [B.foes[0], makeFoe('cdiff', 'battle', 0)]; B.foes[1].k = 3; B.foes[1].first = false; }
+  save(); introFoes().then(async () => { if (B.foes.some(f => f.pid === 'cdiff') && !B.o.cdShown) { B.o.cdShown = 1; await cdHelp('前の治療で 善玉菌が へって、ディフィシル菌が ふえていた!'); } playerTurn(); });
 }
 async function introFoes() {
   for (const f of B.foes) {
@@ -411,7 +412,7 @@ async function useDrug(id) {
   if (d.cat === 'abx' || d.gut) {
     const before = R.gut;
     if (before === 0 && d.gut) { R.hp -= 1; floatTxt('げり❤️-1', null, 'bad'); }
-    R.gut = Math.max(0, R.gut - d.gut);
+    R.gut = Math.max(0, R.gut - (p.combo ? Math.ceil(d.gut / 2) : d.gut));
     if (before > 0 && R.gut === 0) B.gutHit = true;
     R.resist += d.rsk;
     if (id === 'mepm') R.mepm++;
@@ -453,13 +454,21 @@ function afterAction() {
   const R = S.run;
   // 善玉菌が 0 → ステージ2以降は ディフィシル菌が ふえる
   if (B.gutHit && R.stage >= 2 && !B.cdSpawned && !B.foes.some(f => f.pid === 'cdiff' && f.hp > 0)) {
-    B.cdSpawned = true; const nf = makeFoe('cdiff', 'battle', 0); nf.k = S.seen.cdiff ? 1 : 3; B.foes.push(nf);
-    toast('🥛 善玉菌が いなくなって、ディフィシル菌が ふえた!', 3200);
-    if (nf.first) { introFoes(); }
+    B.cdSpawned = true;
+    if (B.foes.every(f => f.hp <= 0) || B.foes.some(f => P[f.pid].combo)) { R.cdNext = true; toast('🥛 善玉菌が 0に… 次のバトルで ディフィシル菌が 出るかも。休けいや ヨーグルトで 善玉菌を ふやそう', 3600); }
+    else { const nf = makeFoe('cdiff', 'battle', 0); nf.hp = nf.max = Math.ceil(nf.max * 0.6); nf.k = 3; nf.first = false; B.foes.push(nf); cdHelp('善玉菌が いなくなって、ディフィシル菌が ふえた!'); }
   }
   if (R.hp <= 0) return lose();
   if (B.foes.every(f => f.hp <= 0)) return win();
   renderBattle();
+}
+async function cdHelp(head) {
+  S.seen.cdiff = S.seen.cdiff || Date.now();
+  const ok = ['fdx', 'mnz', 'vcm'].filter(learned);
+  let got = '';
+  if (!ok.length) { learn('mnz'); got = '<p class="got">💊 <b>メトロニダゾール</b>を おぼえた!</p>'; }
+  await modal(`<div class="row c">${ART.patho(P.cdiff, 3, 80)}</div><b>🥛 ${head}</b><p>抗菌薬で おなかの善玉菌が へると、ディフィシル菌が ふえる。</p><p>効く薬: <b>${['fdx', 'mnz', 'vcm'].map(id => D[id].ja + (learned(id) ? '(持っている)' : '')).join('・')}</b></p>${got}<p class="note">フィダキソマイシンは 善玉菌を へらさない。</p>`, ['たたかう']);
+  save(); if (B) renderBattle();
 }
 async function doTest(free) {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
