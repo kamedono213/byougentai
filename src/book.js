@@ -46,12 +46,7 @@ const BOOK = (() => {
         const good = DRUGS.filter(d => effOf(d, p) === 2 && !(C.best || []).includes(d.id));
         const so = DRUGS.filter(d => effOf(d, p) === 1);
         const dl = ds => ds.map(d => `<span class="bdrug" data-k="${esc(d.ja)}">${gi(d).slice(0, 2)}${d.ja}</span>`).join('');
-        add('病原体', p.ja, `<div class="bhead">${ART.patho(p, 3, 96)}<div><b class="big">${p.ja}</b><span class="note">${p.full}</span><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span>${p.resist ? '<span class="tag" style="background:#ff9f43">耐性菌</span>' : ''}${p.combo ? '<span class="tag" style="background:#ffd34d">併用が必要</span>' : ''}</div></div>
-          <p class="note">📍 ${p.place} ・ 🤒 ${p.sym}</p>${C.hist ? `<p>🗣️ 問診: ${C.hist}</p>` : ''}
-          <p>✨ <b>第一選択(ばっちり)</b>: ${best.length ? dl(best) : p.noDrug ? '薬は なし → 内視鏡で 取り出す' : p.self ? '特効薬は なし → 体を ささえる・めんえきを 助ける' : '—'}</p>
-          ${good.length ? `<p>💊 そのほか 効く薬: ${dl(good)}</p>` : ''}${so.length ? `<p>△ 効きにくいことがある: ${dl(so)}</p>` : ''}
-          <p class="note">🧪 迅速検査: ${C.rapid ? 'あり(陽性で 名前が わかる)' : 'なし(問診・グラム染色・培養で)'}${p.cat === 'bac' && p.gram && GRAM_SHAPE[p.shape] ? ` ・ 🔬 グラム染色: ${GRAM_SHAPE[p.shape]}${GRAM[p.gram]}` : ''}</p>
-          <p>📝 ${p.fact}</p><p class="note">出てくる所: ${where(p)}</p>`,
+        add('病原体', p.ja, `${pathoCard(p, { all: true })}<p>✨ <b>第一選択(ばっちり)</b>: ${best.length ? dl(best) : p.noDrug ? '薬は なし → 内視鏡で 取り出す' : p.self ? '特効薬は なし → 体を ささえる' : '—'}</p>${good.length ? `<p>💊 そのほか 効く薬: ${dl(good)}</p>` : ''}${so.length ? `<p>△ 効きにくいことがある: ${dl(so)}</p>` : ''}<p class="note">出てくる所: ${where(p)}</p>`,
           [p.full, CAT[p.cat].ja, p.gram ? GRAM[p.gram] : '', p.place, p.sym, C.hist, best.map(d => d.ja + ' 第一選択').join(' '), good.map(d => d.ja).join(' '), p.resist ? '耐性菌' : '', p.combo ? '併用' : '', p.self ? '特効薬なし' : '', C.rapid ? '迅速検査' : ''].join(' '));
       }
     }

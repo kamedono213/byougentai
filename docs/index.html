@@ -249,12 +249,24 @@ a { color: var(--mute); }
 .zlist h4 { margin: 10px 0 4px; }
 .meet { position: relative; display: grid; place-items: center; animation: pop .5s; } .meet-new { position: absolute; top: 0; left: 50%; transform: translateX(40px) rotate(12deg); background: #ff4d6d; color: #fff; font-weight: 900; border-radius: 8px; padding: 1px 8px; font-size: 13px; }
 .meet-d { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; } .mini { display: grid; justify-items: center; background: #fff8ea; color: #2b1d0a; border-radius: 10px; padding: 3px 6px; font-size: 11px; } .mini.best { box-shadow: 0 0 0 3px #ffcf3d; }
-.optd { flex-direction: row !important; align-items: center !important; gap: 10px; border-color: var(--c) !important; } .optd > span { display: grid; }
+.optd { --c: #2c4466; flex-direction: row !important; align-items: center !important; gap: 10px; border-color: var(--c) !important; } .optd > span { display: grid; }
 .banner { position: fixed; left: 50%; top: 40%; transform: translate(-50%,-50%); z-index: 60; font-size: 30px; font-weight: 900; color: #fff; text-shadow: 0 3px 0 #b34d12, 0 0 18px #ffb300; white-space: nowrap; pointer-events: none; animation: bannerIn 1.3s forwards; }
 @keyframes bannerIn { 0% { transform: translate(-50%,-50%) scale(.3); opacity: 0; } 15% { transform: translate(-50%,-50%) scale(1.25); opacity: 1; } 30% { transform: translate(-50%,-50%) scale(1); } 80% { opacity: 1; } 100% { transform: translate(-50%,-80%) scale(1); opacity: 0; } }
 @keyframes pop { 0% { transform: scale(.3); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
 .foe.dead .pz { animation: poof .6s forwards; } @keyframes poof { 40% { transform: scale(1.3) rotate(10deg); filter: brightness(2); } 100% { transform: scale(0) rotate(-20deg); opacity: 0; } }
 .patbox.hurt { animation: shake .35s; } .patbox.hurt .pat { filter: drop-shadow(0 0 8px #ff4d4d); }
+#app.fitScr > .reward, #app.fitScr > .shop, #app.fitScr > .stages, #app.fitScr > .achs, #app.fitScr > .looks, #app.fitScr > .zgrid { align-content: start; }
+.bigem { font-size: 34px; line-height: 1; } .evem { font-size: 56px; line-height: 1.1; animation: pop .4s; }
+.shop { grid-template-columns: 1fr 1fr; } .shop #out { grid-column: 1 / -1; }
+.stile { flex-direction: column !important; align-items: center !important; text-align: center !important; gap: 2px !important; padding: 8px 6px 26px !important; }
+.stile em { top: auto !important; bottom: 6px; right: 50% !important; transform: translateX(50%) !important; }
+.stile .note { font-size: 11px; }
+.pcard { background: linear-gradient(180deg, #fffdf6, color-mix(in srgb, var(--c) 18%, #fff3d6)); }
+.pcard .dc-art { background: radial-gradient(circle, #fff 25%, color-mix(in srgb, var(--c) 40%, #fff) 100%); }
+.dc-gram { font-size: 11px; background: #fff; border: 1.5px solid var(--c); border-radius: 999px; padding: 0 6px; }
+.dc-place { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; font-size: 12px; font-weight: 800; } .dc-place span { background: #fff; border-radius: 8px; padding: 1px 6px; }
+.dc-skill { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px; } .dc-skill span { background: #2b1d0a; color: #ffe9a8; border-radius: 8px; padding: 1px 7px; font-size: 11.5px; font-weight: 800; }
+.dc-foe .q { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: #e9e2d2; color: #9a8a6a; font-weight: 900; }
 /* 報酬・ショップ */
 .reward, .shop { display: grid; gap: 8px; }
 /* 図鑑 */

@@ -1,0 +1,24 @@
+const { chromium } = require('C:/Users/user/Desktop/自作ゲーム/2_カードゲーム/DigimonCard/node_modules/playwright');
+(async () => {
+  const b = await chromium.launch();
+  const c = await b.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 1.5, isMobile: true, hasTouch: true });
+  const p = await c.newPage(); await p.goto('http://localhost:5411/'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(700);
+  const s = async (n, fn) => { await p.evaluate(() => document.querySelectorAll('.ov,#book').forEach(e => e.remove())); await p.evaluate(fn); await p.waitForTimeout(500); await p.screenshot({ path: `shots/all-${n}.png` }); };
+  await s('01title-new', () => title());
+  await s('02manual', () => manual('intro', title));
+  await p.evaluate(() => { S.tut = 99; ['pen', 'osel', 'tbf', 'pyr', 'ctrx', 'ors', 'amox', 'cez'].forEach(id => learn(id, true)); S.seen.strep = 1; S.kills.strep = 2; save(); });
+  await s('03stages', () => stageSelect());
+  await s('04event', () => { S.run = newRun(1, 0); save(); eventScreen(); });
+  await s('05shop', () => { S.run.coins = 120; shopScreen(); });
+  await s('06rest', () => restScreen());
+  await s('07test', () => { startBattle({ foes: ['strep'], node: 'battle' }); setTimeout(() => testMenu(), 700); });
+  await p.waitForTimeout(600); await p.screenshot({ path: 'shots/all-07test.png' });
+  await s('08reward', () => rewardScreen('elite'));
+  await s('09zukan-p', () => zukan('p'));
+  await s('10zukan-pcard', () => { zukan('p'); document.querySelector('[data-zp]').click(); });
+  await s('11ach', () => achScreen());
+  await s('12look', () => lookScreen());
+  await s('13keep', () => keepScreen());
+  await s('14clear', () => { S.run = newRun(1, 0); stageClear(); });
+  await b.close();
+})();
