@@ -358,7 +358,7 @@ function intentHtml(f) {
 function foeLabel(f) {
   const p = P[f.pid];
   if (f.k >= 3) return `<b>${p.ja}</b>`;
-  if (f.k === 2) return `<b style="color:${CAT[p.cat].col}">${CAT[p.cat].ja}${p.gram ? '(' + GRAM[p.gram] + ')' : ''}</b>`;
+  if (f.k === 2) return `<b style="color:${CAT[p.cat].col}">${p.gram ? GRAM[p.gram] + '菌' : CAT[p.cat].ja}</b>`;
   if (f.k === 1) return `<b style="color:${CAT[p.cat].col}">${CAT[p.cat].ja}</b>`;
   return '<b>???</b>';
 }
