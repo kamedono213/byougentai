@@ -68,3 +68,28 @@ const ART = (() => {
   }
   return { patho, doctor, patient, LOOKS };
 })();
+
+// ---------- 薬の絵(飲み薬・カプセル・点滴・吸入・ぬり薬…。色は ジャンルの色)
+const FORM = { pen: 'iv', amox: 'capsule', cez: 'iv', ctrx: 'iv', azm: 'pill', cam: 'pill', mino: 'capsule', lvfx: 'pill', tazpip: 'iv', mepm: 'iv', vcm: 'iv', lzd: 'pill', mnz: 'pill', fdx: 'pill', cl: 'iv', inh: 'pill', rfp: 'capsule', pza: 'pill', eb: 'pill', vpz: 'pill', osel: 'capsule', zana: 'inhale', bxm: 'pill', nmv: 'pill', ens: 'pill', rdv: 'iv', acv: 'pill', vacv: 'pill', tbf: 'cream', flcz: 'capsule', vrcz: 'pill', mcfg: 'iv', amph: 'iv', pyr: 'syrup', mbz: 'pill', ivm: 'pill', phen: 'cream', al: 'pill', apg: 'pill', ors: 'bottle', apap: 'pill', drip: 'bag', loxo: 'pill', dclf: 'pill', pred: 'pill', bif: 'powder', o2: 'mask', nutri: 'food', sleep: 'bed', endo: 'scope', abpc: 'iv', doxy: 'capsule', st: 'pill', gm: 'iv', dap: 'iv', cfpm: 'iv', abz: 'pill', gcv: 'iv', etv: 'pill', sofvel: 'pill', fc: 'capsule' };
+const FORM_JA = { pill: '飲み薬(錠剤)', capsule: '飲み薬(カプセル)', iv: '点滴・注射', bag: '点滴', inhale: '吸入', cream: 'ぬり薬', syrup: 'シロップ', bottle: '飲みもの', powder: '粉薬', mask: '酸素マスク', food: '食事', bed: 'ねる', scope: '内視鏡' };
+ART.drug = (d, size = 48) => {
+  const col = d.cat === 'sup' ? '#ff8fa3' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col;
+  const dk = c => { const n = parseInt(c.slice(1), 16); const f = v => Math.round(v * .7).toString(16).padStart(2, '0'); return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255); };
+  const s = dk(col);
+  const F = {
+    pill: `<ellipse cx="50" cy="58" rx="34" ry="14" fill="${s}"/><ellipse cx="50" cy="50" rx="34" ry="14" fill="${col}" stroke="${s}" stroke-width="3"/><line x1="30" y1="50" x2="70" y2="50" stroke="#fff" stroke-width="3" opacity=".7"/><ellipse cx="38" cy="45" rx="8" ry="3" fill="#fff" opacity=".5"/>`,
+    capsule: `<g transform="rotate(-35 50 50)"><rect x="14" y="36" width="72" height="28" rx="14" fill="#fff" stroke="${s}" stroke-width="3"/><path d="M50 36 h22 a14 14 0 0 1 0 28 h-22 z" fill="${col}"/><rect x="22" y="41" width="20" height="5" rx="2.5" fill="#fff" opacity=".8"/></g>`,
+    iv: `<rect x="34" y="14" width="32" height="10" rx="3" fill="#bbb"/><rect x="28" y="22" width="44" height="58" rx="8" fill="#eaf6ff" stroke="${s}" stroke-width="3"/><rect x="32" y="44" width="36" height="32" rx="5" fill="${col}"/><rect x="34" y="30" width="32" height="8" rx="3" fill="#fff"/><path d="M46 80 v10 M54 80 v10" stroke="#999" stroke-width="3"/>`,
+    bag: `<path d="M26 18 h48 v52 q0 14 -24 14 q-24 0 -24 -14z" fill="#eaf6ff" stroke="${s}" stroke-width="3"/><path d="M28 46 h44 v24 q0 12 -22 12 q-22 0 -22 -12z" fill="${col}" opacity=".85"/><rect x="40" y="8" width="20" height="10" rx="3" fill="#aaa"/><path d="M50 84 v12" stroke="#999" stroke-width="4"/>`,
+    inhale: `<rect x="36" y="10" width="28" height="50" rx="8" fill="${col}" stroke="${s}" stroke-width="3"/><path d="M30 56 h40 v16 h-14 v14 h-12 v-14 h-14z" fill="#f2f2f2" stroke="${s}" stroke-width="3"/><circle cx="50" cy="28" r="6" fill="#fff" opacity=".7"/>`,
+    cream: `<g transform="rotate(-20 50 50)"><path d="M18 38 h50 l14 8 v8 l-14 8 h-50z" fill="#fff" stroke="${s}" stroke-width="3"/><rect x="18" y="38" width="28" height="24" fill="${col}"/><rect x="82" y="44" width="10" height="12" rx="2" fill="${s}"/></g><path d="M74 72 q10 6 4 14" stroke="${col}" stroke-width="6" fill="none" stroke-linecap="round"/>`,
+    syrup: `<rect x="34" y="12" width="32" height="12" rx="3" fill="${s}"/><path d="M30 24 h40 v54 q0 10 -10 10 h-20 q-10 0 -10 -10z" fill="#fff6e8" stroke="${s}" stroke-width="3"/><path d="M32 50 h36 v28 q0 8 -8 8 h-20 q-8 0 -8 -8z" fill="${col}"/>`,
+    bottle: `<rect x="40" y="8" width="20" height="10" rx="3" fill="#4aa3ff"/><path d="M36 18 h28 l6 12 v54 q0 8 -8 8 h-24 q-8 0 -8 -8 v-54z" fill="#e8f6ff" stroke="#4aa3ff" stroke-width="3"/><rect x="32" y="44" width="36" height="20" fill="${col}"/><text x="50" y="58" font-size="10" text-anchor="middle" fill="#fff" font-weight="900">ORS</text>`,
+    powder: `<path d="M24 22 h52 v58 h-52z" fill="#fff" stroke="${s}" stroke-width="3"/><path d="M24 22 l6 -8 h40 l6 8" fill="${col}"/><circle cx="40" cy="52" r="4" fill="${col}"/><circle cx="56" cy="44" r="3" fill="${col}"/><circle cx="58" cy="62" r="4" fill="${col}"/>`,
+    mask: `<path d="M24 40 q26 -26 52 0 l-6 30 q-20 12 -40 0z" fill="#e8f6ff" stroke="${s}" stroke-width="3"/><path d="M50 70 q0 14 18 22" stroke="#7fc8ff" stroke-width="5" fill="none"/><text x="50" y="58" font-size="14" text-anchor="middle" fill="${s}" font-weight="900">O₂</text>`,
+    food: `<path d="M18 50 h64 q0 30 -32 30 q-32 0 -32 -30z" fill="#fff" stroke="${s}" stroke-width="3"/><ellipse cx="50" cy="50" rx="32" ry="8" fill="#ffe9b0"/><circle cx="40" cy="48" r="4" fill="#ff7b7b"/><circle cx="56" cy="47" r="4" fill="#7ad36b"/><path d="M38 34 q4 -10 0 -18 M50 34 q4 -10 0 -18 M62 34 q4 -10 0 -18" stroke="#ccc" stroke-width="3" fill="none"/>`,
+    bed: `<rect x="12" y="52" width="76" height="18" rx="4" fill="${col}"/><rect x="12" y="38" width="10" height="44" fill="${s}"/><rect x="18" y="44" width="22" height="12" rx="5" fill="#fff"/><text x="70" y="38" font-size="16" fill="#7fc8ff" font-weight="900">Zz</text>`,
+    scope: `<path d="M20 80 q10 -50 40 -50 q20 0 20 20" stroke="#333" stroke-width="7" fill="none" stroke-linecap="round"/><circle cx="80" cy="52" r="8" fill="${col}" stroke="#333" stroke-width="3"/><circle cx="80" cy="52" r="3" fill="#fff"/>`,
+  };
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" class="dz">${F[FORM[d.id]] || F.pill}</svg>`;
+};

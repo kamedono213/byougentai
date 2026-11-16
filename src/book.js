@@ -64,10 +64,8 @@ const BOOK = (() => {
         const okFor = PATHO.filter(p => !p.base && effOf(d, p) === 2 && !bestFor.includes(p));
         const soFor = PATHO.filter(p => !p.base && effOf(d, p) === 1);
         const pl = ps => ps.map(p => `<span class="bdrug" data-k="${esc(p.ja)}">${CAT[p.cat].em}${p.ja}</span>`).join('');
-        add('薬', d.ja, `<div class="bhead"><div class="drugcard big" style="--c:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}"><b>${d.ja}</b><span>${gi(d)}</span></div><div>${d.brand ? `<span class="note">商品名の れい: ${d.brand}</span>` : ''}${d.sub ? `<span class="note">${d.sub}</span>` : ''}<span class="note">${d.cls}</span>${d.endless ? '<span class="tag" style="background:#b6a6ff">むげん病院</span>' : ''}</div></div>
-          <p>${d.desc}</p><p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${d.dmg}(3ターン 効く)` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.guard ? ` ・ 🛡️+${d.guard}` : ''}${d.gutUp ? ` ・ 🥛+${d.gutUp}` : ''}${d.immUp ? ` ・ めんえき+${d.immUp}` : ''}${d.immDown ? ` ・ めんえき-${d.immDown}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️耐性+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
-          ${bestFor.length ? `<p>✨ 第一選択に なる 相手: ${pl(bestFor)}</p>` : ''}${okFor.length ? `<p>💊 効く 相手: ${pl(okFor)}</p>` : ''}${soFor.length ? `<p>△ 効きにくいことがある: ${pl(soFor)}</p>` : ''}${d.nsaid ? '<p class="warn">⚠️ インフルエンザ・水ぼうそうの時は さける(とくに 子ども)</p>' : ''}
-          <p>📝 ${d.fact}</p>`,
+        add('薬', d.ja, `${drugCard(d)}<p class="stats">💊処方ポイント ${d.cost}${d.dmg ? ` ・ ⚔️${d.dmg}(3ターン 効く)` : ''}${d.heal ? ` ・ ❤️+${d.heal}` : ''}${d.guard ? ` ・ 🛡️+${d.guard}` : ''}${d.gutUp ? ` ・ 🥛+${d.gutUp}` : ''}${d.immUp ? ` ・ めんえき+${d.immUp}` : ''}${d.immDown ? ` ・ めんえき-${d.immDown}` : ''}${d.cd ? ` ・ ⏳休み${d.cd}` : ''}${d.gut ? ` ・ 🥛-${d.gut}` : ''}${d.rsk ? ` ・ ⚠️耐性+${d.rsk}` : ''}${d.hurt ? ` ・ 副作用❤️-${d.hurt}` : ''}</p>
+          ${bestFor.length ? `<p>✨ 第一選択に なる 相手: ${pl(bestFor)}</p>` : ''}${okFor.length ? `<p>💊 効く 相手: ${pl(okFor)}</p>` : ''}${soFor.length ? `<p>△ 効きにくいことがある: ${pl(soFor)}</p>` : ''}${d.nsaid ? '<p class="warn">⚠️ インフルエンザ・水ぼうそうの時は さける(とくに 子ども)</p>' : ''}`,
           [DCAT[d.cat], d.brand, d.sub, d.cls, d.desc, bestFor.map(p => p.ja).join(' '), okFor.map(p => p.ja).join(' '), d.endless ? 'むげん病院' : ''].join(' '));
       }
     }
