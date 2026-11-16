@@ -628,7 +628,7 @@ async function chooseScenario() {
   const R = S.run, best = (S.endless && S.endless.best) || 0;
   const open = SCN.filter(s => best >= s.need && s.id !== R.lastScn);
   const three = shuffle(open).slice(0, 3);
-  const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>${three.map(s => `<p class="scn" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></p>`).join('')}`, three.map(s => `${s.em} ${s.ja}`));
+  const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
   const pt = PATIENTS[s.patient]; R.max = pt.hp + (R.act - 1) * 4; R.hp = R.max; R.gut = 10;
@@ -639,7 +639,7 @@ async function chooseScenario() {
 }
 async function forkScreen() {
   const R = S.run, op = forkOptions(R);
-  const i = await modal(`<b class="big">🧭 分かれ道</b><p>どうする?</p>${op.map(o => `<p class="scn"><b>${o.ja}</b><span class="note">${o.desc}</span></p>`).join('')}`, op.map(o => o.ja.replace(/<[^>]+>/g, '')));
+  const i = await modal(`<b class="big">🧭 分かれ道</b><p>どうする?</p>`, op.map(o => `<span class="scnb"><b>${o.ja}</b><span class="note">${o.desc}</span></span>`));
   const fx = op[i].fx; R.mod = R.mod || {};
   if (fx.hot) R.mod.hot = fx.hot;
   if (fx.coin) R.mod.coin = Math.max(R.mod.coin || 1, fx.coin);
