@@ -119,13 +119,16 @@ function forkOptions(R) {
 // ---- むげん病院の すすめ方
 function endlessStart() {
   const best = (S.endless && S.endless.best) || 0;
-  modal(`<b class="big">♾️ むげん病院</b><p>派遣先を えらんで、ボスを たおすたびに 次の幕へ。どこまで 行けるか ちょうせん!</p><p class="note">幕が すすむほど 病原体が 強くなる。ここでしか 出会えない 病原体と 薬が いる。負けたら おわり(図鑑・おぼえた薬は のこる)。</p><p class="note">さいこう記録: ${best ? best + '幕' : 'まだ なし'}</p>
-    <div class="row c asc"><span>むずかしさ</span><select id="easc">${Array.from({ length: Math.min(((S.endless && S.endless.asc) || 0) + 1, 10) }, (_, i) => `<option value="${i}">${i ? i : 'ふつう'}</option>`).join('')}</select></div>`, ['はじめる', 'やめる']).then(async i => {
+  modal(`<b class="big">♾️ むげん病院</b><p>派遣先を えらんで、ボスを たおすたびに 次の幕へ。どこまで 行けるか ちょうせん!</p><p class="note">幕が すすむほど 病原体が 強くなる。ここでしか 出会えない 病原体と 薬が いる。</p><p class="note">💊 毎回 <b>ペニシリン・タミフル・安静・経口補水液・おかゆ</b>だけで スタート。薬は ごほうびや お店で ふやす。負けたら その回の 薬は なくなるけど、<b>💪けんこうポイント</b>で きたえた 体は ずっと のこる。</p><p class="note">💪 ${mpt()}ポイント</p><p class="note">さいこう記録: ${best ? best + '幕' : 'まだ なし'}</p>
+    <div class="row c asc"><span>むずかしさ</span><select id="easc">${Array.from({ length: Math.min(((S.endless && S.endless.asc) || 0) + 1, 10) }, (_, i) => `<option value="${i}">${i ? i : 'ふつう'}</option>`).join('')}</select></div>`, ['はじめる', '💪 からだづくり', 'やめる']).then(async i => {
+    if (i === 1) return metaScreen();
     if (i !== 0) return;
     const asc = +((document.getElementById('easc') || {}).value || 0);
     if (S.run && !await ask('<b>今の つづきは 消えるけど いい?</b>', 'はじめる')) return;
     S.endless = S.endless || { best: 0, runs: 0 }; S.endless.runs++;
-    const R = newRun(0, 0); Object.assign(R, { stage: 9, asc, act: 1, coins: 40, items: ['hint'], mod: {} });
+    const R = newRun(0, 0); Object.assign(R, { stage: 9, asc, act: 1, coins: 40 + 20 * mlv('coin'), items: ['hint'], mod: {}, deck: ['pen', 'osel', 'sleep', 'ors', 'okayu'] });
+    const extra = shuffle(DRUGS.filter(d => !d.endless && d.cost === 1 && !R.deck.includes(d.id) && (d.cat !== 'sup' || CARE_FOR[d.id]))).slice(0, mlv('study'));
+    extra.forEach(d => { R.deck.push(d.id); learn(d.id, true); });
     S.run = R; save(); SE.play('start'); chooseScenario();
   });
 }
@@ -136,7 +139,7 @@ async function chooseScenario() {
   const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
-  const pt = PATIENTS[s.patient]; R.max = pt.hp + (R.act - 1) * 4; R.hp = R.max; R.gut = 10;
+  const pt = PATIENTS[s.patient]; R.max = pt.hp + (R.act - 1) * 4 + 3 * mlv('run'); R.hp = R.max; R.gut = 10;
   R.map = makeMap(9); R.pos = null; R.path = []; R.pending = null; R.shop = null; R.evSeen = [];
   save();
   await modal(`<div class="row c">${ART.patient(pt.look, true, 90)}</div><b>${s.em} ${s.ja}</b><p>今回の 患者: ${pt.ja.replace('のどがいたい', '具合のわるい')}</p><p class="note">ボスは まだ ひみつ。とちゅうの 🧭分かれ道で 流れが かわるよ。</p>`, ['しゅっぱつ!']);
@@ -168,7 +171,35 @@ async function actClear(coin) {
 async function endlessOver() {
   const R = S.run; S.run = null;
   const reached = R.act - 1 + (R.fl + 1) / 13;
-  S.endless.deep = Math.max(S.endless.deep || 0, reached); save(); checkAch();
-  await modal(`<b class="big">😵 むげん病院 おしまい</b><p><b>${R.act}幕</b> ${SC[R.scn].em}${SC[R.scn].ja} の ${R.fl + 1}階まで すすんだ。</p><p class="note">さいこう記録: ${S.endless.best || 0}幕 クリア</p><p class="note">図鑑と おぼえた薬は のこる。次は もっと 先へ!</p>`, ['タイトルへ']);
+  S.endless.deep = Math.max(S.endless.deep || 0, reached);
+  const pts = Math.round(reached * 20) + 5; S.meta = S.meta || { pt: 0, lv: {} }; S.meta.pt += pts; S.meta.total = (S.meta.total || 0) + pts; save(); checkAch();
+  const oi = await modal(`${angelHtml()}<b class="big">👼 患者さんは 天国へ 旅立った…</b><p class="note">見送った 患者さん: <b>${(S.lost || []).length}人</b></p><b>むげん病院 おしまい</b><p><b>${R.act}幕</b> ${SC[R.scn].em}${SC[R.scn].ja} の ${R.fl + 1}階まで すすんだ。</p><p class="note">さいこう記録: ${S.endless.best || 0}幕 クリア</p><p class="got">💪 けんこうポイント <b>+${pts}</b>(ぜんぶで ${mpt()})</p><p class="note">図鑑は のこる。ポイントで 体を きたえて、次は もっと 先へ!</p>`, ['💪 からだづくり', 'タイトルへ']);
+  if (oi === 0) return metaScreen();
   title();
+}
+
+// ---- からだづくり(むげん病院の ずっと のこる 強化)
+const META = [
+  { id: 'run', em: '🏃', ja: '運動', sub: 'ランニング・なわとび', max: 5, base: 20, step: 15, fx: l => '患者の 体力の 上限 +' + 3 * l, why: '体力が つくと、病気で 弱っても もちこたえやすい。' },
+  { id: 'food', em: '🥦', ja: '栄養', sub: 'バランスの いい ごはん', max: 3, base: 40, step: 35, fx: l => 'めんえき +' + l + '(いつも)', why: 'たんぱく質・ビタミンは めんえきの 材料。' },
+  { id: 'sleep', em: '😴', ja: '早ね早おき', sub: 'たっぷり ねむる', max: 3, base: 30, step: 25, fx: l => 'バトルの はじめに 体力 +' + 2 * l, why: 'ねている間に 体が なおる。ねぶそくだと かぜを ひきやすい。' },
+  { id: 'wash', em: '🧼', ja: '手あらい・うがい', sub: '外から 帰ったら', max: 5, base: 25, step: 15, fx: l => '病原体の 体力 -' + 4 * l + '%', why: '体に 入る 病原体の 数を へらせる。いちばん かんたんな 予防。' },
+  { id: 'ferm', em: '🥛', ja: '発酵食品', sub: 'ヨーグルト・なっとう', max: 3, base: 30, step: 25, fx: l => '抗菌薬で 善玉菌が へるのを バトルごとに ' + l + '回 ふせぐ', why: 'おなかの 善玉菌を 元気に たもつ。' },
+  { id: 'study', em: '📚', ja: '勉強', sub: '医学の 本を 読む', max: 3, base: 50, step: 40, fx: l => 'スタートの 薬が ' + l + 'つ ふえる(ランダム)', why: '知っている 薬が 多いほど、えらべる 手が ふえる。' },
+  { id: 'lab', em: '🔬', ja: '検査の 練習', sub: '顕微鏡に なれる', max: 1, base: 80, step: 0, fx: () => '毎バトル 最初の 検査が タダ', why: 'すばやく 正体を 見ぬける。' },
+  { id: 'coin', em: '🐷', ja: 'ちょきん', sub: 'おこづかいを ためる', max: 3, base: 20, step: 20, fx: l => 'スタートの コイン +' + 20 * l, why: 'お店で 薬や 道具を 買える。' },
+];
+const mlv = id => (S.meta && S.meta.lv && S.meta.lv[id]) || 0;
+const mpt = () => (S.meta && S.meta.pt) || 0;
+const mcost = (x, l) => x.base + x.step * l;
+function metaScreen(keep) {
+  S.meta = S.meta || { pt: 0, lv: {} }; S.meta.lv = S.meta.lv || {};
+  const card = x => {
+    const l = mlv(x.id), done = l >= x.max, c = mcost(x, l);
+    const dots = Array.from({ length: x.max }, (_, i) => '<i class="' + (i < l ? 'on' : '') + '"></i>').join('');
+    return '<div class="meta ' + (done ? 'done' : '') + '"><span class="mem">' + x.em + '</span><div class="mtx"><b>' + x.ja + ' <span class="note">' + x.sub + '</span></b><span class="mlv">' + dots + '</span><span class="mfx">' + (l ? '今: ' + x.fx(l) : x.fx(1)) + '</span><span class="note">' + x.why + '</span></div><button class="btn sm ' + (!done && mpt() >= c ? 'main' : '') + '" data-m="' + x.id + '" ' + (done || mpt() < c ? 'disabled' : '') + '>' + (done ? 'MAX' : '💪' + c) + '</button></div>';
+  };
+  screen(topBar('💪 からだづくり', title) + '<p class="note">むげん病院で すすむほど <b>けんこうポイント</b>が もらえる。きたえた 体は ずっと のこる。</p><div class="mpt">💪 <b>' + mpt() + '</b> ポイント</div><div class="metas">' + META.map(card).join('') + '</div><button class="btn main" id="mgo">♾️ むげん病院へ</button>', '', keep);
+  app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const x = META.find(y => y.id === b.dataset.m), l = mlv(x.id), c = mcost(x, l); if (l >= x.max || mpt() < c) return; S.meta.pt -= c; S.meta.lv[x.id] = l + 1; save(); SFX.play('learn'); toast(x.em + ' ' + x.ja + ' Lv' + (l + 1) + '! ' + x.fx(l + 1), 2200); metaScreen(true); });
+  $('#mgo').onclick = () => endlessStart();
 }

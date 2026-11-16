@@ -56,11 +56,11 @@ const shots = path.join(__dirname, '../shots'); fs.mkdirSync(shots, { recursive:
   await p.evaluate(() => { const L = lose; window.lose = undefined; lose = async function () { window.lastDeath = { foes: B.foes.map(f => f.pid + ':' + f.hp + '/' + f.max), fl: S.run.fl, res: S.run.resist, gut: S.run.gut, turn: B.turn, lv: JSON.stringify(S.run.lv) }; return L(); }; });
   await p.evaluate(() => { const W = win; window.bst = []; win = async function () { window.bst.push({ s: S.run && S.run.stage, t: B.turn, d: B.dmgTaken }); return W(); }; });
   for (let n = 0; n < N; n++) for (const stage of STAGES_) {
-    if (stage === 9) await p.evaluate(() => { S.clear = { 1: 1, 2: 1, 3: 1 }; const R = newRun(0, 0); Object.assign(R, { stage: 9, asc: 0, act: 1, coins: 40, items: ['hint'], mod: {} }); S.run = R; save(); chooseScenario(); });
+    if (stage === 9) await p.evaluate(() => { S.clear = { 1: 1, 2: 1, 3: 1 }; const R = newRun(0, 0); Object.assign(R, { stage: 9, asc: 0, act: 1, coins: 40, items: ['hint'], mod: {}, deck: ['pen', 'osel', 'sleep', 'ors', 'okayu'] }); S.run = R; save(); chooseScenario(); });
     else await p.evaluate(st => { S.run = newRun(st, 0); save(); mapScreen(); }, stage);
     if (n === 0) await shot(`1${stage}-map`);
     let battles = 0, out = 'timeout', took = {};
-    for (let i = 0; i < (stage === 9 ? 9000 : 3000); i++) {
+    for (let i = 0; i < (stage === 9 ? 4000 : 3000); i++) {
       const r = await step();
       if (n === 0 && r.startsWith('use') && !took.b) { took.b = 1; await shot(`1${stage}-battle`); }
       if (n === 0 && r === 'reward' && !took.r) { took.r = 1; }

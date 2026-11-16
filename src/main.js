@@ -32,6 +32,9 @@ function modal(html, btns) {
 }
 const ask = async (html, yes) => (await modal(html, [yes, 'やめる'])) === 0;
 const learned = id => !!S.learned[id];
+// むげん病院は その回だけの 薬だな(R.deck)。図鑑には ずっと のこる
+const has = id => S.run && S.run.deck ? S.run.deck.includes(id) : learned(id);
+function gain(id, silent) { const R = S.run; let nw = false; if (R && R.deck && !R.deck.includes(id)) { R.deck.push(id); nw = true; } return learn(id, silent) || nw; }
 function learn(id, silent) { if (S.learned[id]) return false; S.learned[id] = Date.now(); if (!silent) st('learn'); return true; }
 
 // ---------- じっせき
@@ -80,6 +83,8 @@ A('best30', '✨', 'ばっちり 名医', 'こうか ばつぐんを 30回 出�
 A('mitate10', '🩺', '見立て名人', '問診だけで 当たりを つけて 治療し、10回 正体を 当てる', () => (S.stat.mitate || 0) >= 10);
 A('apap5', '🌡️', '解熱剤の えらび方', 'インフルエンザや 水ぼうそうの時に アセトアミノフェンを 5回 えらぶ', () => (S.stat.apapOk || 0) >= 5);
 A('severe5', '🚑', '救急の たつじん', '重症化に 5回 正しく 対処する', () => (S.stat.severeOk || 0) >= 5);
+A('care10', '💧', 'ささえ上手', '症状に ぴったりの ささえを 10回 えらぶ', () => (S.stat.careBest || 0) >= 10);
+A('consult5', '📞', 'たよれる 相談役', '専門医の クイズに 5回 正解', () => (S.stat.consultOk || 0) >= 5);
 A('shop10', '🏪', 'お買いもの', 'ショップで 10回 買う', () => (S.stat.buy || 0) >= 10);
 function checkAch() {
   const got = [];
@@ -95,7 +100,7 @@ const MANUAL = {
     { t: 'きみは 新人の お医者さん!', b: `<div class="row c">${ART.doctor(S.look, 90)}${ART.patient('kid', true, 80)}</div><p>病気の原因になる 小さな「<b>病原体</b>」を、<b>薬</b>で やっつけて 患者さんを 助けよう。</p><p class="note">病原体は 本物の名前、薬も 本物の名前だよ。</p>` },
     { t: '病原体は 大きく 4つ!', b: `<div class="cats">${catCard('bac', 'strep')}${catCard('vir', 'flu')}${catCard('fun', 'tinea')}${catCard('par', 'pinworm')}</div>` },
     { t: '病原体によって 効く薬が ちがう', b: `<div class="map4"><div><b style="color:${CAT.bac.col}">細菌</b> → 抗菌薬</div><div><b style="color:${CAT.vir.col}">ウイルス</b> → 抗ウイルス薬</div><div><b style="color:${CAT.fun.col}">真菌</b> → 抗真菌薬</div><div><b style="color:${CAT.par.col}">寄生虫</b> → 抗寄生虫薬</div></div><p>ちがう分類の薬は <b>効かない</b>。たとえば「抗菌薬」は ウイルスには 効かない。</p>` },
-    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p><p>🛡️ <b>めんえき隊</b>(好中球・キラーT細胞など)も 毎ターン 1つ 使える。相手に 合う 細胞を えらぼう。薬が 効いて 待つだけの時は <b>⏩様子見</b>。</p>` },
+    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p><p>🛡️ <b>めんえき隊</b>(好中球・キラーT細胞など)も 毎ターン 1つ 使える。相手に 合う 細胞を えらぼう。薬が 効いて 待つだけの時は <b>⏩様子見</b>。</p><p>🛌 ささえは <b>症状に 合わせて</b>。熱なら 解熱剤、げりなら 経口補水液や 点滴、せきや 息苦しさなら 酸素。合うと「ぴったり」で 効果アップ、合わないと あまり 効かない。</p>` },
     { t: '最初の薬を 2つ もらった!', b: `<div class="row c"><div class="drugcard big" style="--c:${CAT.bac.col}"><b>ペニシリン</b><span>抗菌薬</span></div><div class="drugcard big" style="--c:${CAT.vir.col}"><b>オセルタミビル</b><span>タミフル・抗ウイルス薬</span></div></div><p>ペニシリンは 細菌の薬、タミフルは インフルエンザウイルスの薬。</p><p class="note">※ ゲームの中の話だよ。本当の治療は お医者さんが 決めるよ。</p>` },
   ],
   virus: [{ t: 'こんどは ウイルス!', b: `<div class="row c">${ART.patho(P.flu, 3, 90)}</div><p>インフルエンザは <b>ウイルス</b>。ウイルスには <b>抗ウイルス薬</b>(タミフルなど)を 使おう。</p><p>ペニシリン(抗菌薬)は ウイルスには 効かないよ。</p>` }],
@@ -173,7 +178,7 @@ function tutorial(step) {
   const T = TUT[step];
   S.tut = step; save();
   manual(T.man, () => {
-    (T.give || []).forEach(id => learn(id, true)); save();
+    (T.give || []).forEach(id => gain(id, true)); save();
     const foe = Array.isArray(T.foe) ? pick(T.foe) : T.foe;
     S.run = newRun(0); S.run.tutStep = step;
     startBattle({ foes: [foe], known: T.known, tip: T.tip, tut: true, onWin: () => { S.run = null; B = null; tutorial(step + 1); } });
@@ -200,7 +205,7 @@ function stageSelect() {
 }
 function newRun(stage, asc = 0) {
   const pt = stage ? PATIENTS[STAGES[stage - 1].patient] : PATIENTS.kid;
-  if (stage >= 1) { learn('apap', true); learn('nutri', true); learn('sleep', true); } if (stage >= 2) learn('bif', true);
+  if (stage >= 1) { gain('apap', true); gain('nutri', true); gain('sleep', true); gain('cool', true); } if (stage >= 2) gain('bif', true);
   const R = { stage, asc, hp: pt.hp, max: pt.hp, gut: 10, resist: 0, coins: 30, relics: [], items: stage ? ['hint'] : [], lv: {}, pos: null, map: stage ? makeMap(stage) : null, wrong: 0, hintUsed: 0, mepm: 0, gutZero: 0, fl: 0 };
   return R;
 }
@@ -237,13 +242,16 @@ function makeMap(stage) {
   }
   return floors;
 }
-function statusBar(R) {
+function statusBar(R, split) {
   const gutPct = R.gut * 10, resPct = Math.min(100, R.resist * 5);
   return `<div class="status"><div class="sb hp"><span>❤️</span><div class="bar"><i style="width:${R.hp / R.max * 100}%"></i></div><b>${R.hp}/${R.max}</b></div>
     <div class="sb gut" title="善玉菌"><span>🥛</span><div class="bar"><i style="width:${gutPct}%"></i></div><b>${R.gut}</b></div>
     <div class="sb res" title="耐性メーター"><span>⚠️</span><div class="bar"><i style="width:${resPct}%"></i></div><b>${R.resist}</b></div>
-    <div class="sb coin">🪙${R.coins}</div></div>
-    <div class="relics"><span class="relic bkbtn" id="bk">📕攻略本</span>${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
+    <div class="sb coin">🪙${R.coins}</div>${split ? '<button class="sbtn" id="bk">📕<small>攻略本</small></button><button class="sbtn" id="quit">⏸</button>' : ''}</div>
+    ${split ? '' : relicsRow(R)}`;
+}
+function relicsRow(R, noBook) {
+  return `<div class="relics">${noBook ? '' : '<span class="relic bkbtn" id="bk">📕攻略本</span>'}${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
 }
 const RL = id => RM[id];
 function bindStatus(inBattle) {
@@ -318,30 +326,33 @@ function makeFoe(pid, node, known) {
   const p = P[pid]; let { hp, atkAdd } = scaleFoe(pid, node);
   if (conv && node !== 'elite' && node !== 'boss') hp = Math.round(hp * 0.7);
   let k = known != null ? known : 0;
-  const first = !S.seen[pid];
+  let first = !S.seen[pid];
+  const fresh = R.stage === 9 && first; if (fresh) first = false;
   if (first) k = 3;
   if (R.relics.includes('chart') && S.kills[pid]) k = 3;
   if (R.relics.includes('steth')) k = Math.max(k, 1);
   if (!sg) k = known != null ? known : k;
   let h = hp; if (R.relics.includes('soap')) h = Math.ceil(h * 0.9);
-  return { pid, hp: h, max: hp, atkAdd, k, pi: 0, block: 0, dots: [], toxin: false, self: p.self ? p.self + (R.asc >= 3 ? 1 : 0) : 0, combo: new Set(), first, conv };
+  if (R.stage === 9 && mlv('wash')) h = Math.ceil(h * (1 - 0.04 * mlv('wash')));
+  return { pid, hp: h, max: hp, atkAdd, k, pi: 0, block: 0, dots: [], fresh, toxin: false, self: p.self ? p.self + (R.asc >= 3 ? 1 : 0) : 0, combo: new Set(), first, conv };
 }
 function startBattle(o) {
   const R = S.run;
   R.snap = JSON.stringify({ hp: R.hp, gut: R.gut, resist: R.resist, items: R.items, coins: R.coins });
   B = { o, foes: o.foes.map(pid => makeFoe(pid, o.node, o.known)), turn: 0, ap: 0, apMax: 3 + (R.relics.includes('coat') ? 1 : 0), cd: {}, usedTurn: new Set(), sel: null, tgt: 0, guard: 0, free: R.relics.includes('loupe') ? 1 : 0, dmgTaken: 0, wrong: 0, abxOnSelf: false, cdSpawned: false, busy: false, log: [], immUp: 0, immDown: R.imm > 0 ? 2 : 0 };
   if (R.relics.includes('thermo')) R.hp = Math.min(R.max, R.hp + 3);
+  if (R.stage === 9) { if (mlv('sleep')) R.hp = Math.min(R.max, R.hp + 2 * mlv('sleep')); if (mlv('lab')) B.freeTest = 1; B.ferm = mlv('ferm'); }
   if (R.imm > 0) { R.imm--; setTimeout(() => toast('😪 めんえきが 下がっていて、病原体が 強い…', 2600), 400); }
   if (R.cdNext && o.node !== 'boss' && !o.tut) { R.cdNext = false; B.foes = [B.foes[0], makeFoe('cdiff', 'battle', 0)]; B.foes[1].k = 3; B.foes[1].first = false; }
   save(); introFoes().then(async () => { if (B.foes.some(f => f.pid === 'cdiff') && !B.o.cdShown) { B.o.cdShown = 1; await cdHelp('前の治療で 善玉菌が へって、ディフィシル菌が ふえていた!'); } playerTurn(); });
 }
 async function ensureCombo(p) {
   // 併用が必要な相手には、効く薬を かならず 2つ以上 持たせる(1つでは 勝てないので)
-  const own = DRUGS.filter(d => learned(d.id) && effOf(d, p) >= 1);
+  const own = DRUGS.filter(d => has(d.id) && effOf(d, p) >= 1);
   if (own.length >= 2) return;
-  const add = DRUGS.filter(d => !learned(d.id) && effOf(d, p) === 2).sort((a, b) => a.cost - b.cost).slice(0, 2 - own.length);
+  const add = DRUGS.filter(d => !has(d.id) && effOf(d, p) === 2).sort((a, b) => a.cost - b.cost).slice(0, 2 - own.length);
   if (!add.length) return;
-  add.forEach(d => learn(d.id)); save();
+  add.forEach(d => gain(d.id)); save();
   await modal(`<div class="row c">${ART.patho(p, 3, 80)}</div><b>🤝 ${p.ja}には 併用が 必要!</b><p>1つの薬だけでは 耐性が できやすいので、2つ以上を 同じターンに 使おう。</p><p class="got">💊 ${add.map(d => '<b>' + d.ja + '</b>').join('・')}を おぼえた!</p>`, ['たたかう']);
 }
 async function introFoes() {
@@ -351,20 +362,20 @@ async function introFoes() {
     if (f.conv) await modal(`<div class="row c">${ART.patho(p, 3, 90)}</div><b>⚠️ 耐性菌に なっていた!</b><p>耐性メーターが たまっていたので、<b>${p.ja}</b>が あらわれた。</p><p class="note">${p.fact}</p>`, ['たたかう']);
     if (!f.first) continue;
     S.seen[p.base || p.id] = S.seen[p.base || p.id] || Date.now(); S.seen[p.id] = S.seen[p.id] || Date.now();
-    const has = DRUGS.filter(d => learned(d.id) && effOf(d, p) === 2);
+    const owned = DRUGS.filter(d => has(d.id) && effOf(d, p) === 2);
     let give = null;
-    if (!has.length) { give = DRUGS.filter(d => effOf(d, p) === 2).sort((a, b) => a.gut - b.gut || a.cost - b.cost)[0] || (p.self ? D.ors : null); if (give && !learned(give.id)) learn(give.id); else if (p.self && !learned('ors')) { give = D.ors; learn('ors'); } else give = null; }
+    if (!owned.length) { give = DRUGS.filter(d => effOf(d, p) === 2).sort((a, b) => a.gut - b.gut || a.cost - b.cost)[0] || (p.self ? D.ors : null); if (give && !has(give.id)) gain(give.id); else if (p.self && !has('ors')) { give = D.ors; gain('ors'); } else give = null; }
     const how = p.noDrug ? '効く薬は ない。<b>内視鏡</b>で 取り出そう' : p.self ? '特効薬は ない。体をささえて めんえきを 待とう' : `効く薬: <b>${DRUGS.filter(d => effOf(d, p) === 2 && d.cat !== 'sup').map(d => d.ja).slice(0, 4).join('・')}</b>${p.combo ? '<br>⚠️ 2つ以上を 同じターンに 組み合わせて使う(併用)' : ''}`;
     f.first = false;
     SFX.play('newFoe');
-    const effD = DRUGS.filter(d => effOf(d, p) === 2 && learned(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p)).slice(0, 4);
+    const effD = DRUGS.filter(d => effOf(d, p) === 2 && has(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p)).slice(0, 4);
     await modal(`<div class="meet"><span class="meet-new">NEW!</span>${ART.patho(p, 3, 120)}</div><span class="tag" style="background:${CAT[p.cat].col}">${CAT[p.cat].em} ${CAT[p.cat].ja}${p.gram ? '・' + GRAM[p.gram] : ''}</span><b class="big">${p.ja}</b><p class="note">📍${p.place} 🤒${p.sym}</p>${p.noDrug ? '<p>💊 薬は 効かない → <b>内視鏡</b>で とり出そう</p>' : p.self ? '<p>💊 特効薬は ない → 体を ささえて めんえきを 待とう</p>' : `<p class="meet-d">💊 ${effD.map(d => `<span class="mini ${isBest(d, p) ? 'best' : ''}" data-did="${d.id}">${drugArt(d, 36)}<b>${d.ja}</b></span>`).join('')}</p>`}${p.combo ? '<p class="warn">🤝 2つ以上を 同じターンに 使おう(併用)</p>' : ''}${give ? `<p class="got">🎁 <b>${give.ja}</b>を おぼえた!</p>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p></details><p class="note">次からは 自分で 思い出して たたかおう!</p>`, ['たたかう!']);
   }
   save();
 }
 const DOT_T = 3;
 // 患者の めんえき(毎ターン 病原体を こうげき)。体力・善玉菌が 多いほど 強く、ステロイドなどで 弱くなる
-function immPower() { const R = S.run; return clamp(1 + Math.round(R.hp / R.max * 2) + (R.gut >= 6 ? 1 : 0) + B.immUp - B.immDown, 0, 9); }
+function immPower() { const R = S.run; return clamp(1 + Math.round(R.hp / R.max * 2) + (R.gut >= 6 ? 1 : 0) + B.immUp - B.immDown + (R.stage === 9 ? mlv('food') : 0), 0, 9); }
 function foeIntent(f) { const p = P[f.pid]; const [k, v] = p.pat[f.pi % p.pat.length]; return [k, k === 'atk' ? Math.max(0, v + f.atkAdd) * (f.toxin ? 2 : 1) - (maskOn(p) ? 1 : 0) : v]; }
 const maskOn = p => S.run.relics.includes('mask') && /のど|肺/.test(p.place);
 function intentHtml(f) {
@@ -379,39 +390,39 @@ function foeLabel(f) {
   if (f.k >= 3) return `<b>${p.ja}</b>`;
   if (f.k === 2) return `<b style="color:${CAT[p.cat].col}">${p.gram ? GRAM[p.gram] + '菌' : CAT[p.cat].ja}</b>`;
   if (f.k === 1) return `<b style="color:${CAT[p.cat].col}">${CAT[p.cat].ja}</b>`;
-  return '<b>???</b>';
+  return S.run && S.run.stage === 9 ? '' : '<b>???</b>';
 }
 function renderBattle() {
   if (!B || !S.run) return;
+  for (const f of B.foes) if (f.fresh && f.k >= 3) { f.fresh = false; const p = P[f.pid]; S.seen[p.base || p.id] = S.seen[p.base || p.id] || Date.now(); S.seen[p.id] = S.seen[p.id] || Date.now(); save(); setTimeout(() => { toast(`🆕 はじめて 見つけた! ${p.ja} が 図鑑に のった`, 2600); SFX.play('newFoe'); }, 200); }
   const R = S.run;
   const foes = B.foes.map((f, i) => {
     const p = P[f.pid]; if (f.hp <= 0) return '';
-    return `<div class="foe ${B.tgt === i ? 'tgt' : ''}" data-t="${i}" ${f.k >= 3 ? `data-pid="${p.base || p.id}"` : ''}><div class="ints">${intentHtml(f)}</div>${ART.patho(p, f.k, B.foes.filter(x => x.hp > 0).length > 1 ? 82 : 110)}${foeLabel(f)}<span class="note">${p.place}|${p.sym}</span>${f.info && f.info.gram && p.cat === 'bac' && p.gram !== 'none' && p.gram !== 'acid' ? gramSVG(p, 40) : ''}${f.info && f.info.lines ? `<span class="finfo">${f.info.lines.slice(-3).map(esc).join('<br>')}</span>` : ''}
+    return `<div class="foe ${B.tgt === i ? 'tgt' : ''} ${f.info && f.info.lines ? 'inf' : ''}" data-t="${i}" ${f.k >= 3 ? `data-pid="${p.base || p.id}"` : ''}><div class="ints">${intentHtml(f)}</div><div class="pw">${ART.patho(p, f.k, B.foes.filter(x => x.hp > 0).length > 1 ? 82 : 110)}${f.info && f.info.gram && p.cat === 'bac' && p.gram !== 'none' && p.gram !== 'acid' ? `<span class="gb">${gramSVG(p, 40)}</span>` : ''}</div>${foeLabel(f)}<span class="note">${S.run.stage === 9 && f.k < 3 && !(f.info && f.info.ask) ? vague(p) : p.place + '|' + p.sym}</span>${f.info && f.info.lines ? `<span class="finfo">${f.info.lines.slice(-3).map(x => '<i>' + esc(x) + '</i>').join('')}</span>` : ''}
       ${f.dots.length ? `<div class="dots">${f.dots.map(x => `<span>💊${esc(D[x.id].ja.slice(0, 6))} ${x.t}</span>`).join('')}</div>` : ''}<div class="bar fhp"><i style="width:${f.hp / f.max * 100}%"></i><em>${f.hp}/${f.max}${f.block ? ` 🛡️${f.block}` : ''}</em></div>${p.combo && f.k >= 3 ? '<span class="note warn">併用が必要</span>' : ''}</div>`;
   }).join('');
   const tip = B.o.tip ? `<div class="tip">💡 ${B.o.tip}</div>` : '';
   const testCost = R.relics.includes('scope') ? 0 : 1;
   B.mode = B.mode || 'rx';
   const isRx = d => d.cat !== 'sup' || Object.keys(d.eff).length > 0;
-  const shelf = DRUGS.filter(d => learned(d.id) && (B.mode === 'rx' ? isRx(d) : !isRx(d)));
+  const shelf = DRUGS.filter(d => has(d.id) && (B.mode === 'rx' ? isRx(d) : !isRx(d)));
   const anyDots = B.foes.some(f => f.hp > 0 && f.dots.length), selfOnly = B.foes.filter(f => f.hp > 0).every(f => P[f.pid].self || P[f.pid].noDrug && false);
   const tabs = B.mode === 'rx' ? ['all', 'abx', 'vir', 'fun', 'par', 'sup'].filter(c => c === 'all' || shelf.some(d => d.cat === c)) : [];
   B.tab = B.tab && tabs.includes(B.tab) ? B.tab : 'all';
   const sel = B.sel && D[B.sel];
   const tf = B.foes[B.tgt];
   const keepY = window.scrollY, keepS = ($('.drugs') || {}).scrollTop || 0;
-  screen(`${statusBar(R)}<button class="pause" id="quit">⏸</button>${tip}
-    <div class="scene">${bgSVG(bgTheme(R))}<div class="left">${ART.doctor(S.look, 70)}<div class="patbox">${ART.patient(R.stage ? PATIENTS[SG(R).patient].look : 'kid', R.hp < R.max * 0.5, 66)}${B.guard ? `<span class="guard">🛡️${B.guard}</span>` : ''}<span class="imm">🛡️めんえき ${immPower()}</span></div></div><div class="right">${foes}</div></div>
+  screen(`${statusBar(R, true)}${tip}
+    <div class="scene n${B.foes.filter(x => x.hp > 0).length}">${bgSVG(bgTheme(R))}<div class="sceneleft"><span class="syms">${[...symptoms()].map(x => `<i title="${SYM[x][1]}">${SYM[x][0]}<b>${SYM[x][1]}</b></i>`).join('')}</span>${R.relics.length || R.items.length ? relicsRow(R, true) : ''}</div><div class="left">${ART.doctor(S.look, 70)}<div class="patbox">${ART.patient(R.stage ? PATIENTS[SG(R).patient].look : 'kid', R.hp < R.max * 0.5, 66)}${B.guard ? `<span class="guard">🛡️${B.guard}</span>` : ''}<span class="imm">🛡️めんえき ${immPower()}</span></div></div><div class="right">${foes}</div></div>
     <div class="shelf ${B.busy ? 'hide' : ''}">
       <div class="shtop"><span class="ap">${Array.from({ length: B.apMax }, (_, i) => `<i class="${i < B.ap ? 'on' : ''}"></i>`).join('')}</span>
         <button class="btn sm" id="test" ${tf && !B.busy ? '' : 'disabled'}>🔬検査</button>
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
         <button class="btn sm wait" id="wait" ${B.busy ? 'disabled' : ''}>⏩様子見</button><button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
       ${B.cells && B.mode === 'care' ? `<div class="cells"><span class="cl-h">🛡️めんえき隊<br><small>${B.cellUsed ? 'つかった' : '1つ えらぶ'}</small></span>${B.cells.map(id => `<button class="cell ${B.cellUsed ? 'off' : ''}" data-c="${id}" style="--c:${CL[id].col}">${ART.cell(id, 30)}<b>${CL[id].ja}</b></button>`).join('')}</div>` : ''}
-      <div class="modebar">${B.mode === 'rx' ? `<span class="mode-t">💊 処方</span>${anyDots || selfOnly ? `<button class="btn sm modesw" id="toCare">🛌 ${anyDots ? 'ささえるへ' : '薬なしで ささえる'}</button>` : ''}` : `<span class="mode-t care">🛌 ささえる ・ めんえき隊</span><button class="btn sm modesw" id="toRx">💊 処方を かえる・足す</button>`}</div>
-      ${B.mode === 'rx' ? '' : ''}<div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
-      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${drugArt(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
-      <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : (B.ap ? '<span class="note">薬 → 病原体を タップ。長おしで カード</span>' : '<span class="note warn">処方ポイントが なくなった。ターン終了を おそう</span>')}</div>
+      <div class="modebar">${B.mode === 'rx' ? `<span class="mode-t">💊 処方</span><div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>${anyDots || selfOnly ? `<button class="btn sm modesw" id="toCare">🛌 ${anyDots ? 'ささえるへ' : '薬なしで ささえる'}</button>` : ''}` : `<span class="mode-t care">🛌 ささえる</span><button class="btn sm modesw" id="toRx">💊 処方を かえる・足す</button>`}</div>
+            <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''} ${B.mode === 'care' && careFit(d) === 2 ? 'fit' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${drugArt(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
+      <div class="usebar ${sel || !B.ap ? '' : 'idle'}">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : (B.ap ? '<span class="note">薬 → 病原体を タップ。長おしで カード</span>' : '<span class="note warn">処方ポイントが なくなった。ターン終了を おそう</span>')}</div>
     </div>`, 'battleScr', true);
   const dr = $('.drugs'); if (dr) dr.scrollTop = keepS; window.scrollTo(0, keepY);
   bindStatus(true);
@@ -458,7 +469,7 @@ function drugCard(d, lv = 1, opt = {}) {
     <div class="dc-art">${drugArt(d, 92)}</div><b class="dc-name">${d.ja}</b>${famOf(d.id) ? `<span class="dc-fam">👥 ${famOf(d.id).f.ja}</span>` : ''}<span class="dc-sub">${[d.brand, FORM_JA[FORM[d.id]]].filter(Boolean).join('・')}</span>
     <div class="dc-stats">${d.dmg ? bar('⚔️ つよさ', dmgOf(d, lv), 20, '#ff6b6b') : bar('❤️ かいふく', (d.heal || 0) + (d.guard || 0) / 2 + (d.gutUp || 0) + (d.immUp || 0) * 2, 10, '#ff8fa3')}${bar('🥛 おなかに やさしい', 4 - (d.gut || 0), 4, '#6bd18c')}${bar('🌱 耐性に なりにくい', 4 - (d.rsk || 0), 4, '#7fc8ff')}</div>
     ${sorted.length ? `<div class="dc-foes"><span>とくいな 相手</span><div>${sorted.slice(0, 10).map(p => `<span class="dc-foe ${best.has(p.id) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(p.ja)}" data-k="${esc(p.ja)}" data-pid="${p.id}">${ART.patho(p, S.seen[p.id] || opt.all ? 3 : 0, opt.big ? 46 : 34)}${best.has(p.id) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : ''}
-    <p class="dc-desc">${d.desc}</p><details class="dc-more"><summary>📝 もっと 知る</summary><p>${d.fact}</p><p class="note">${d.cls}${d.sub ? '・' + d.sub : ''}</p></details></div>`;
+    ${CARE_FOR[d.id] ? `<p class="dc-when">👉 こんな時に: ${CARE_FOR[d.id].map(x => SYM[x][0] + SYM[x][1]).join('・')}</p>` : ''}<p class="dc-desc">${d.desc}</p><details class="dc-more"><summary>📝 もっと 知る</summary><p>${d.fact}</p><p class="note">${d.cls}${d.sub ? '・' + d.sub : ''}</p></details></div>`;
 }
 const danger = p => p.boss || p.resist && p.hp >= 60 ? 3 : p.resist || p.combo || p.hp >= 36 ? 2 : 1;
 function pathoCard(p, opt = {}) {
@@ -473,7 +484,7 @@ function pathoCard(p, opt = {}) {
     <div class="dc-place"><span>📍${p.place}</span><span>🤒${p.sym}</span></div>
     <div class="dc-stats">${bar('⚔️ こうげき', atk, 9, '#ff6b6b')}${bar('❤️ タフさ', p.hp, 60, '#ff9f43')}${bar('⬆️ ふえる 力', grow, 10, '#c59bff')}</div>
     ${skill.length ? `<div class="dc-skill">${skill.map(s => `<span>${s}</span>`).join('')}</div>` : ''}
-    ${drugs.length ? `<div class="dc-foes"><span>${p.noDrug ? '' : '効く 薬'}</span><div>${drugs.slice(0, 10).map(d => `<span class="dc-foe ${isBest(d, p) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(d.ja)}" data-k="${esc(d.ja)}" data-did="${d.id}">${learned(d.id) || opt.all ? drugArt(d, opt.big ? 48 : 32) : '<span class="q">?</span>'}${isBest(d, p) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : `<p class="dc-desc">${p.self ? '💊 特効薬は ない → 体を ささえて めんえきを 待とう' : ''}</p>`}
+    ${drugs.length ? `<div class="dc-foes"><span>${p.noDrug ? '' : '効く 薬'}</span><div>${drugs.slice(0, 10).map(d => `<span class="dc-foe ${isBest(d, p) ? 'best' : ''} ${effOf(d, p) === 1 ? 'so' : ''}" title="${esc(d.ja)}" data-k="${esc(d.ja)}" data-did="${d.id}">${has(d.id) || opt.all ? drugArt(d, opt.big ? 48 : 32) : '<span class="q">?</span>'}${isBest(d, p) ? '<i>✨</i>' : ''}</span>`).join('')}</div></div>` : `<p class="dc-desc">${p.self ? '💊 特効薬は ない → 体を ささえて めんえきを 待とう' : ''}</p>`}
     ${C.hist ? `<details class="dc-more"><summary>🗣️ 問診の ヒント</summary><p>${C.hist}</p></details>` : ''}<details class="dc-more"><summary>📝 もっと 知る</summary><p>${p.fact}</p>${C.rapid ? '<p class="note">🧪 迅速検査で わかる</p>' : ''}</details>
     ${opt.kills != null ? `<p class="note">たおした数: ${opt.kills}</p>` : ''}</div>`;
 }
@@ -493,6 +504,27 @@ function peek(el) {
   document.addEventListener('click', e => { if (fired) { fired = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
   document.addEventListener('contextmenu', e => { if (e.target.closest && e.target.closest(sel)) e.preventDefault(); }, true);
 })();
+const SYM = { fever: ['🤒', '熱'], pain: ['😣', 'いたみ'], gi: ['💩', 'げり'], vomit: ['🤮', 'はく'], vomitS: ['🤮', 'はげしく はく'], resp: ['😮‍💨', 'せき'], itch: ['🫳', 'かゆみ'] };
+function symOf(p) { const s = new Set(), t = p.sym + ' ' + p.place; if (/ねつ|熱/.test(t)) s.add('fever'); if (/いたい|いたみ|痛/.test(t)) s.add('pain'); if (/げり/.test(t)) s.add('gi'); if (/はく|吐|はき気/.test(t)) s.add('vomit'); if (/せき|息|ゼーゼー|肺/.test(t)) s.add('resp'); if (/かゆ/.test(t)) s.add('itch'); return s; }
+function vague(p) { const s = [...symOf(p)]; return s.length ? s.map(x => SYM[x][0] + SYM[x][1]).join(' ') : '😐 なんとなく 具合が わるい'; }
+function symptoms() {
+  const s = new Set();
+  for (const f of (B ? B.foes : [])) {
+    if (f.hp <= 0) continue; const p = P[f.pid], t = p.sym + ' ' + p.place;
+    if (/ねつ|熱/.test(t)) s.add('fever');
+    if (/いたい|いたみ|痛/.test(t)) s.add('pain');
+    if (/げり/.test(t)) s.add('gi'); if (/はく|吐|はき気/.test(t)) s.add('vomit');
+    if (/せき|息|ゼーゼー|肺/.test(t)) s.add('resp');
+    if (/かゆ/.test(t)) s.add('itch');
+  }
+  if (S.run && S.run.gut <= 0) s.add('gi');
+  if (s.has('vomit') && S.run && S.run.hp <= S.run.max * 0.5) { s.delete('vomit'); s.add('vomitS'); }
+  return s;
+}
+// ささえる薬が 合う 症状
+const CARE_FOR = { apap: ['fever', 'pain'], loxo: ['fever', 'pain'], dclf: ['fever', 'pain'], cool: ['fever'], ors: ['gi', 'vomit', 'vomitS'], okayu: ['gi'], drip: ['gi', 'vomitS'], bif: ['gi'], domp: ['vomit', 'vomitS'], o2: ['resp'], humid: ['resp'], honey: ['resp'], dxm: ['resp'], carbo: ['resp'], antih: ['itch'] };
+function careFit(d) { const need = CARE_FOR[d.id]; if (!need) return 1;
+  { const s = symptoms(); if (d.id === 'okayu') { if (s.has('vomitS')) return -1; if (s.has('vomit')) return 1; if (!need.some(x => s.has(x))) return 1; } if (d.id === 'ors' && s.has('vomitS')) return 1; } if (d.nsaid && B && B.foes.some(x => x.hp > 0 && ['flu', 'flu_boss', 'vzv'].includes(x.pid))) return 1; const s = symptoms(); return need.some(x => s.has(x)) ? 2 : 0; }
 const dmgOf = (d, lv) => Math.round(d.dmg * (1 + (lv - 1) * 0.3));
 async function fx(cls, i) { const el = app.querySelector(`[data-t="${i}"]`); if (el) { el.classList.remove('hit', 'miss', 'heal'); void el.offsetWidth; el.classList.add(cls); } await wait(380); }
 function floatTxt(t, i, cls = '') { const el = i == null ? app.querySelector('.patbox') : app.querySelector(`[data-t="${i}"]`); if (!el) return; const s = document.createElement('span'); s.className = 'float ' + cls; s.innerHTML = t; el.appendChild(s); setTimeout(() => s.remove(), 1200); }
@@ -515,9 +547,16 @@ async function useDrug(id) {
   }
   if (viral && d.id === 'apap') { R.hp = Math.min(R.max, R.hp + 2); st('apapOk'); toast('◎ インフルエンザ・水ぼうそうの 熱には アセトアミノフェン。正解!', 2400); }
   if (d.heal || d.guard || d.gutUp || d.immUp) {
-    if (d.heal) { R.hp = Math.min(R.max, R.hp + d.heal + (lv - 1) * 2); floatTxt('❤️+' + (d.heal + (lv - 1) * 2), null, 'heal'); }
-    if (d.guard) B.guard += d.guard;
-    if (d.gutUp) R.gut = Math.min(10, R.gut + d.gutUp);
+    const fit = careFit(d), cm = fit === 2 ? 1.6 : fit === 0 ? 0.3 : fit === -1 ? 0 : 1;
+    if (fit === -1) { R.hp -= 2; floatTxt('❤️-2', null, 'bad'); SE.play('ng'); toast('🤮 はげしく はいている時に おかゆは 逆効果… まず 点滴(輸液)で 水分を', 3200); st('careMiss'); }
+    else if (d.id === 'okayu' && symptoms().has('vomit')) toast('🤮 はいている時は、おかゆより 経口補水液を 少しずつが 先', 2800);
+    else if (d.id === 'ors' && symptoms().has('vomitS')) toast('🤮 はげしく はいて 飲めない時は、点滴(輸液)の ほうが いい', 2800);
+    const heal = Math.round((d.heal || 0) * cm + (d.heal ? (lv - 1) * 2 : 0)), guard = Math.round((d.guard || 0) * cm);
+    if (heal) { R.hp = Math.min(R.max, R.hp + heal); floatTxt('❤️+' + heal, null, 'heal'); }
+    if (guard) B.guard += guard;
+    if (d.gutUp) R.gut = Math.min(10, R.gut + Math.round(d.gutUp * (fit === 2 ? 1.5 : 1)));
+    if (fit === 2) { banner('✨ ぴったりの ささえ!', 'best'); SFX.play('best'); st('careBest'); const need = CARE_FOR[d.id].filter(x => symptoms().has(x)).map(x => SYM[x][1]).join('・'); setTimeout(() => toast(`◎ ${need}に ${d.ja}。効果 アップ!`, 2400), 300); }
+    else if (fit === 0) { const need = CARE_FOR[d.id].map(x => SYM[x][1]).join('や'); toast(`△ ${need}が ないので、${d.ja}は あまり 効かない`, 2800); st('careMiss'); }
     if (d.hurt) { R.hp -= d.hurt; toast(`💊 ${d.ja}の 副作用 ❤️-${d.hurt}`); }
     if (d.immUp) { B.immUp = Math.min(4, B.immUp + d.immUp); floatTxt('🛡️めんえき UP', null, 'heal'); }
     if (d.immDown) { B.immDown += d.immDown; B.foes.forEach(f => { if (f.self) f.self++; }); toast('⚠️ めんえきが 下がった…(病原体への こうげきが 弱くなる)', 2600); }
@@ -527,7 +566,8 @@ async function useDrug(id) {
   if (d.cat === 'abx' || d.gut) {
     const before = R.gut;
     if (before === 0 && d.gut) { R.hp -= 1; floatTxt('げり❤️-1', null, 'bad'); }
-    R.gut = Math.max(0, R.gut - (p.combo ? Math.ceil(d.gut / 2) : d.gut));
+    let gl = p.combo ? Math.ceil(d.gut / 2) : d.gut; if (gl > 0 && B.ferm > 0) { gl--; B.ferm--; floatTxt('🥛まもった', null, 'heal'); }
+    R.gut = Math.max(0, R.gut - gl);
     if (before > 0 && R.gut === 0) B.gutHit = true;
     R.resist += d.rsk;
     if (id === 'mepm') R.mepm++;
@@ -592,10 +632,10 @@ function afterAction() {
 }
 async function cdHelp(head) {
   S.seen.cdiff = S.seen.cdiff || Date.now();
-  const ok = ['fdx', 'mnz', 'vcm'].filter(learned);
+  const ok = ['fdx', 'mnz', 'vcm'].filter(has);
   let got = '';
-  if (!ok.length) { learn('mnz'); got = '<p class="got">💊 <b>メトロニダゾール</b>を おぼえた!</p>'; }
-  await modal(`<div class="row c">${ART.patho(P.cdiff, 3, 80)}</div><b>🥛 ${head}</b><p>抗菌薬で おなかの善玉菌が へると、ディフィシル菌が ふえる。</p><p>効く薬: <b>${['fdx', 'mnz', 'vcm'].map(id => D[id].ja + (learned(id) ? '(持っている)' : '')).join('・')}</b></p>${got}<p class="note">フィダキソマイシンは 善玉菌を へらさない。</p>`, ['たたかう']);
+  if (!ok.length) { gain('mnz'); got = '<p class="got">💊 <b>メトロニダゾール</b>を おぼえた!</p>'; }
+  await modal(`<div class="row c">${ART.patho(P.cdiff, 3, 80)}</div><b>🥛 ${head}</b><p>抗菌薬で おなかの善玉菌が へると、ディフィシル菌が ふえる。</p><p>効く薬: <b>${['fdx', 'mnz', 'vcm'].map(id => D[id].ja + (has(id) ? '(持っている)' : '')).join('・')}</b></p>${got}<p class="note">フィダキソマイシンは 善玉菌を へらさない。</p>`, ['たたかう']);
   save(); if (B) renderBattle();
 }
 async function testMenu() {
@@ -603,10 +643,54 @@ async function testMenu() {
   const cost = t => B.freeTest ? 0 : Math.max(0, t.cost - (R.relics.includes('scope') ? 1 : 0));
   const done = f.info || {};
   const i = await modal(`<b class="big">🔬 どの 検査を する?</b><p class="note">処方ポイント のこり ${B.ap}${B.freeTest ? '(次の 検査は タダ)' : ''}</p>`,
-    TESTS.map(t => `<span class="scnb"><b>${t.em} ${t.ja} ${done[t.id] ? '(した)' : '・' + cost(t)}</b><span class="note">${t.desc}</span></span>`).concat(['やめる']));
+    TESTS.map(t => `<span class="scnb"><b>${t.em} ${t.ja} ${done[t.id] ? '(した)' : '・' + cost(t)}</b><span class="note">${t.desc}</span></span>`).concat(R.stage === 9 ? [`<span class="scnb consult"><b>📞 専門医に 相談 ${B.consulted ? '(した)' : '・1'}</b><span class="note">病原体と 効く薬を 当てたら、その薬を もらえる(1バトル 1回)</span></span>`] : []).concat(['やめる']));
+  if (R.stage === 9 && i === TESTS.length) return consult();
   const t = TESTS[i]; if (!t || done[t.id]) return;
   if (B.ap < cost(t)) return toast('処方ポイントが 足りない');
   B.ap -= cost(t); B.freeTest = 0; doTestKind(t.id);
+}
+// 専門医に 相談: ① 病原体を 当てる ② 効く薬を 当てる → 両方 正解で その薬を もらえる
+async function consult() {
+  const R = S.run, f = B.foes[B.tgt]; if (!f || f.hp <= 0) return;
+  if (B.consulted) return toast('相談は 1バトルに 1回まで');
+  if (B.ap < 1) return toast('処方ポイントが 足りない');
+  B.ap -= 1; B.consulted = true; save();
+  const p = P[f.pid], sg = SG(R);
+  const clue = [(f.info && f.info.ask) || f.k >= 3 ? '📍 ' + p.place + ' / ' + p.sym : vague(p)].concat((f.info && f.info.lines) || []).map(esc).join('<br>');
+  // ① 病原体
+  const near = [...new Set([...sg.enemies, ...sg.elites, ...sg.boss].concat(PATHO.filter(x => x.cat === p.cat).map(x => x.id)))].filter(id => id !== p.id && P[id] && !P[id].base);
+  const same = near.filter(id => P[id].cat === p.cat), other = near.filter(id => P[id].cat !== p.cat);
+  const wrongP = shuffle(f.k >= 1 ? same : shuffle(same).slice(0, 2).concat(other)).slice(0, 3);
+  const optP = shuffle([p.id, ...wrongP]);
+  SFX.play('select');
+  const a1 = await modal(`<b class="big">📞 専門医: 「どの 病原体だと 思う?」</b><p class="clue">${clue}</p><p class="note">わかっている 所見から 考えよう。攻略本の 病原体の ページが ヒント。</p>`, optP.map(id => `<span class="scnb"><b>${CAT[P[id].cat].em} ${P[id].ja}</b></span>`));
+  if (optP[a1] !== p.id) {
+    SE.play('ng'); st('consultNg');
+    await modal(`<b class="big">🙅 ちがうみたい…</b><p>所見を もう一度 見なおそう。検査を ふやすと しぼりこみやすい。</p><p class="note">(相談は この バトルでは おしまい)</p>`, ['OK']);
+    return renderBattle();
+  }
+  f.k = 3; SFX.play('best'); renderBattle();
+  // ② 効く薬
+  const eff = DRUGS.filter(d => effOf(d, p) === 2 && d.cat !== 'sup');
+  if (!eff.length) {
+    const a = await modal(`<b class="big">⭕ 正解! ${p.ja}</b><p>専門医: 「では、どう 治療する?」</p>`, ['💊 抗菌薬で たたく', '🛌 体を ささえて めんえきで なおす', '🔪 すぐ 手術']);
+    const okA = p.noDrug ? -1 : 1;
+    if (a === okA) { SFX.play('best'); st('consultOk'); if (!has('ors')) gain('ors'); await modal(`<b class="big">⭕ そのとおり!</b><p>${p.ja}には 特効薬が ない。経口補水液・安静・栄養で ささえて、めんえきが たおすのを 待つ。</p>`, ['OK']); }
+    else { SE.play('ng'); await modal(`<b class="big">🙅 ざんねん</b><p>${p.noDrug ? '内視鏡などで 取りのぞく 相手。' : p.ja + 'に 効く 薬は ない。体を ささえて めんえきを 待とう。'}</p>`, ['OK']); }
+    return renderBattle();
+  }
+  const right = eff.filter(d => !has(d.id)).sort((a, b) => isBest(b, p) - isBest(a, p))[0] || eff.sort((a, b) => isBest(b, p) - isBest(a, p))[0];
+  const dc = { bac: 'abx', vir: 'vir', fun: 'fun', par: 'par' }[p.cat]; const pool = DRUGS.filter(d => d.cat !== 'sup' && !d.endless && effOf(d, p) === 0 && !eff.includes(d)); const wrongD = shuffle(pool.filter(d => d.cat === dc)).slice(0, 2).concat(shuffle(pool.filter(d => d.cat !== dc)).slice(0, 1)); while (wrongD.length < 3) { const x = pool.find(d => !wrongD.includes(d)); if (!x) break; wrongD.push(x); }
+  const optD = shuffle([right, ...wrongD]);
+  const a2 = await modal(`<b class="big">⭕ 正解! ${p.ja}</b><p>専門医: 「では、どの 薬が 効く?」</p>`, optD.map(d => `<span class="scnb optd2">${drugArt(d, 36)}<b>${d.ja}</b><span class="note">${d.cls}</span></span>`));
+  if (optD[a2] === right) {
+    const nw = gain(right.id); save(); SFX.play('learn'); st('consultOk');
+    await modal(`<b class="big">🎁 ${nw ? '薬を もらった!' : 'そのとおり!'}</b>${drugCard(right)}<p class="note">${p.ja}には ${eff.map(d => d.ja).slice(0, 4).join('・')} など。</p>`, ['やった!']);
+  } else {
+    SE.play('ng');
+    await modal(`<b class="big">🙅 おしい!</b><p>${p.ja}に 効くのは <b>${eff.map(d => d.ja).slice(0, 4).join('・')}</b> など。</p><p class="note">攻略本の ${p.ja}の ページに のっているよ。正体は わかったので、手もちの 薬で がんばろう。</p>`, ['OK']);
+  }
+  renderBattle();
 }
 async function doTestKind(kind) {
   const f = B.foes[B.tgt], p = P[f.pid], t = TESTS.find(x => x.id === kind);
@@ -730,6 +814,7 @@ async function win() {
   rewardScreen(B.o.node);
 }
 async function lose() {
+  if (!B || !S.run || B.lost) return; B.lost = true;
   const R = S.run; B.busy = true; SE.play('over');
   if (B.o.tut || (R.stage === 1)) {
     const s = JSON.parse(R.snap); Object.assign(R, s); R.hp = Math.max(R.hp, Math.ceil(R.max * 0.5)); save();
@@ -737,9 +822,10 @@ async function lose() {
     if (B.o.onLose) return B.o.onLose();
     return startBattle(B.o);
   }
+  S.lost = S.lost || []; S.lost.push({ t: Date.now(), who: PATIENTS[SG(R).patient].short, where: SG(R).ja, foes: B.foes.filter(f => f.hp > 0).map(f => f.pid) }); save();
   if (R.stage === 9) return endlessOver();
   const fl = R.fl; S.run = null; save();
-  await modal(`<b class="big">😵 治療 しっぱい…</b><p>${SG(R).ja} の ${fl + 1}階で 力つきた。</p><p class="note">図鑑と おぼえた薬は のこるよ。もう一度 チャレンジ!</p>`, ['タイトルへ']);
+  await modal(`${angelHtml()}<b class="big">👼 患者さんは 天国へ 旅立った…</b><p>${SG(R).ja} の ${fl + 1}階で 力が およばなかった。</p><p class="note">見送った 患者さん: <b>${S.lost.length}人</b>。この 数を わすれずに、次の 患者さんを 助けよう。</p><p class="note">図鑑と おぼえた薬は のこるよ。もう一度 チャレンジ!</p>`, ['タイトルへ']);
   title();
 }
 
@@ -747,9 +833,9 @@ async function lose() {
 function rewardPool(R) {
   const sg = SG(R);
   const want = new Set(); [...sg.enemies, ...sg.elites, ...sg.boss].forEach(pid => DRUGS.forEach(d => { if (effOf(d, P[pid])) want.add(d.id); }));
-  ['apap', 'ors', 'drip', 'loxo', 'dclf', 'pred', 'bif', 'o2', 'nutri', 'sleep'].forEach(x => want.add(x));
+  ['apap', 'ors', 'drip', 'loxo', 'dclf', 'pred', 'bif', 'o2', 'nutri', 'sleep', 'cool', 'humid', 'honey', 'dxm', 'carbo', 'domp', 'antih', 'okayu'].forEach(x => want.add(x));
   if (R.stage === 9) DRUGS.filter(d => d.endless).forEach(d => want.add(d.id));
-  return [...want].filter(id => !learned(id));
+  return [...want].filter(id => !has(id));
 }
 function rewardScreen(node) {
   const R = S.run;
@@ -760,7 +846,7 @@ function rewardScreen(node) {
   const opts = [];
   const pool = shuffle(rewardPool(R));
   if (pool.length) opts.push({ k: 'learn', id: pool[0] });
-  const ups = shuffle(DRUGS.filter(d => learned(d.id) && d.dmg && (R.lv[d.id] || 1) < 4));
+  const ups = shuffle(DRUGS.filter(d => has(d.id) && d.dmg && (R.lv[d.id] || 1) < 4));
   if (ups.length) opts.push({ k: 'up', id: ups[0].id });
   if (pool.length > 1 && Math.random() < 0.5) opts.push({ k: 'learn', id: pool[1] }); else if (ups[1]) opts.push({ k: 'up', id: ups[1].id });
   opts.push({ k: 'item', id: pick(ITEMS).id });
@@ -776,7 +862,7 @@ function rewardScreen(node) {
   bindStatus(false);
   app.querySelectorAll('[data-o]').forEach(b => b.onclick = async () => {
     const o = opts[+b.dataset.o]; SE.play('ok');
-    if (o.k === 'learn') { learn(o.id); const d = D[o.id]; SFX.play('learn'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
+    if (o.k === 'learn') { gain(o.id); const d = D[o.id]; SFX.play('learn'); await modal(`<b class="big">🎁 新しい薬を おぼえた!</b>${drugCard(d)}`, ['やった!']); }
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
     if (o.k === 'item') { if (R.items.length < 3) R.items.push(o.id); else toast('アイテムは 3こまで'); }
     checkAch(); save(); mapScreen();
@@ -808,7 +894,7 @@ function shopScreen() {
   const R = S.run;
   if (!R.shop || R.shop.f !== R.fl) {
     const rel = shuffle(RELICS.filter(r => !R.relics.includes(r.id)))[0];
-    const ups = shuffle(DRUGS.filter(d => learned(d.id) && d.dmg && (R.lv[d.id] || 1) < 4)).slice(0, 2);
+    const ups = shuffle(DRUGS.filter(d => has(d.id) && d.dmg && (R.lv[d.id] || 1) < 4)).slice(0, 2);
     const nd = shuffle(rewardPool(R))[0];
     R.shop = { f: R.fl, list: [...ITEMS.map(i => ({ k: 'item', id: i.id, price: i.price })), rel && { k: 'relic', id: rel.id, price: rel.rare ? 110 : 70 }, ...ups.map(d => ({ k: 'up', id: d.id, price: 40 })), nd && { k: 'learn', id: nd, price: 45 }, { k: 'heal', price: 20 }, { k: 'gut', price: 15 }].filter(Boolean), sold: [] };
   }
@@ -823,7 +909,7 @@ function shopScreen() {
     if (o.k === 'item') R.items.push(o.id);
     if (o.k === 'relic') R.relics.push(o.id);
     if (o.k === 'up') R.lv[o.id] = (R.lv[o.id] || 1) + 1;
-    if (o.k === 'learn') learn(o.id);
+    if (o.k === 'learn') gain(o.id);
     if (o.k === 'heal') R.hp = Math.min(R.max, R.hp + 12);
     if (o.k === 'gut') R.gut = Math.min(10, R.gut + 5);
     checkAch(); save(); shopScreen();
@@ -832,7 +918,7 @@ function shopScreen() {
 }
 function restScreen() {
   const R = S.run; const heal = Math.round(R.max * 0.3 * (R.relics.includes('kit') ? 1.5 : 1));
-  const ups = DRUGS.filter(d => learned(d.id) && d.dmg && (R.lv[d.id] || 1) < 4);
+  const ups = DRUGS.filter(d => has(d.id) && d.dmg && (R.lv[d.id] || 1) < 4);
   screen(`${topBar('🛏️ 休けい', null)}${statusBar(R)}<div class="reward"><p>ひと休み。どうする?</p>
     <button class="btn opt optd" id="r1"><span class="bigem">😴</span><span><b>休む</b><span class="note">体力 +${heal}</span></span></button>
     <button class="btn opt optd" id="r2" ${ups.length ? '' : 'disabled'}><span class="bigem">📖</span><span><b>勉強する</b><span class="note">薬を 1つ 強くする</span></span></button>
@@ -843,7 +929,7 @@ function restScreen() {
   $('#r3').onclick = () => { SE.play('ok'); R.gut = 10; R.resist = Math.max(0, R.resist - 2); save(); mapScreen(); };
 }
 function upgradePick(done) {
-  const R = S.run; const ups = DRUGS.filter(d => learned(d.id) && d.dmg && (R.lv[d.id] || 1) < 4);
+  const R = S.run; const ups = DRUGS.filter(d => has(d.id) && d.dmg && (R.lv[d.id] || 1) < 4);
   screen(`${topBar('どの薬を 強くする?', null)}<div class="reward">${ups.map(d => `<button class="btn opt optd" data-u="${d.id}" style="--c:${dCol(d)}">${drugArt(d, 40)}<span><b>${d.ja}</b><span class="note">Lv${R.lv[d.id] || 1}→${(R.lv[d.id] || 1) + 1} ・ ⚔️${dmgOf(d, R.lv[d.id] || 1)}→${dmgOf(d, (R.lv[d.id] || 1) + 1)}</span></span></button>`).join('')}</div>`);
   app.querySelectorAll('[data-u]').forEach(b => b.onclick = () => { SE.play('ok'); R.lv[b.dataset.u] = (R.lv[b.dataset.u] || 1) + 1; save(); done(); });
 }
@@ -866,7 +952,7 @@ async function eventScreen() {
   if (c.item && R.items.length < 3) R.items.push(c.item);
   if (c.imm) R.imm = (R.imm || 0) + c.imm;
   if (c.relic && !R.relics.includes(c.relic)) R.relics.push(c.relic);
-  if (c.upgrade && learned(c.upgrade)) R.lv[c.upgrade] = (R.lv[c.upgrade] || 1) + 1;
+  if (c.upgrade && has(c.upgrade)) R.lv[c.upgrade] = (R.lv[c.upgrade] || 1) + 1;
   save(); SE.play(c.fight ? 'ng' : 'ok');
   await modal(`<div class="evem">${c.fight ? '😱' : c.resist > 0 || c.imm ? '😟' : '😊'}</div><p>${c.msg}</p>`, ['OK']);
   if (c.fight) return startBattle({ foes: [c.fight], node: 'battle' });
@@ -889,9 +975,12 @@ function zukan(tab) {
   });
   app.querySelectorAll('[data-zd]').forEach(b => b.onclick = () => { SE.play('select'); drugInfo(b.dataset.zd, false); });
 }
+function angelHtml() {
+  return '<div class="angel"><svg viewBox="0 0 100 100" width="84" height="84"><ellipse cx="50" cy="16" rx="22" ry="7" fill="none" stroke="#ffd34d" stroke-width="5"/><path d="M14 58 q-12 -22 8 -30 q8 10 14 24z M86 58 q12 -22 -8 -30 q-8 10 -14 24z" fill="#fff" stroke="#cfe0ff" stroke-width="2"/><circle cx="50" cy="48" r="20" fill="#ffe0bd"/><path d="M42 47 q3 3 6 0 M52 47 q3 3 6 0" stroke="#5a3a20" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M45 56 q5 4 10 0" stroke="#c0605a" stroke-width="2.5" fill="none" stroke-linecap="round"/><path d="M34 70 q16 26 32 0z" fill="#fff" stroke="#cfe0ff" stroke-width="2"/></svg></div>';
+}
 function achScreen() {
   S.newAch = 0; save();
   const n = ACH.filter(a => S.ach[a.id]).length;
-  screen(`${topBar(`じっせき ${n}/${ACH.length}`, title)}<div class="achs">${ACH.map(a => `<div class="ach ${S.ach[a.id] ? 'on' : ''}"><span>${S.ach[a.id] ? a.em : '🔒'}</span><div><b>${a.ja}</b><span class="note">${a.desc}</span></div></div>`).join('')}</div><p class="note c">じっせきで 新しい お医者さんの 見た目が 解放されるよ。</p>`);
+  screen(`${topBar(`じっせき ${n}/${ACH.length}`, title)}${(S.lost || []).length ? `<div class="lostbox">${angelHtml()}<div><b>👼 見送った 患者さん ${S.lost.length}人</b><span class="note">治療が 間に合わなかった 患者さんの 数。へらすことは できない。</span><span class="note">${S.lost.slice(-5).reverse().map(x => `${new Date(x.t).getMonth() + 1}/${new Date(x.t).getDate()} ${esc(x.where)}`).join('<br>')}</span></div></div>` : ''}<div class="achs">${ACH.map(a => `<div class="ach ${S.ach[a.id] ? 'on' : ''}"><span>${S.ach[a.id] ? a.em : '🔒'}</span><div><b>${a.ja}</b><span class="note">${a.desc}</span></div></div>`).join('')}</div><p class="note c">じっせきで 新しい お医者さんの 見た目が 解放されるよ。</p>`);
   bindBack(title);
 }
