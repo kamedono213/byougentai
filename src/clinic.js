@@ -1,0 +1,67 @@
+// ---------- 診断のための 情報(問診で わかること・迅速検査・第一選択の薬)
+// best: その相手に「ばっちり」な薬(第一選択の考え方)。当てると こうかばつぐん。スペクトラム内なら ふつうに効く
+// hist: 問診で わかること(どこで・だれから・どんなふうに)
+// rapid: 迅速検査で 名前まで わかるか
+const CLINIC = {
+  strep: { best: ['amox', 'pen'], rapid: 1, hist: 'きょうだいも のどが いたい。せきは あまり出ない。のどが 真っ赤。' },
+  pneumo: { best: ['amox'], rapid: 1, hist: 'かぜの あとに 耳が いたくなった/高い熱と たんの からむ せき。' },
+  staph: { best: ['cez'], hist: '虫さされを かきこわした あとが、赤く はれて うみが出た。' },
+  mrsa: { best: ['vcm', 'lzd', 'dap'], hist: '入院が 長い。前に 抗菌薬を 何回も 使っている。' },
+  ecoli: { best: ['ctrx'], hist: 'おしっこが 近い・いたい。せなか(腰)を たたくと ひびく。' },
+  esbl: { best: ['mepm'], hist: 'おしっこの 感染を くりかえしていて、前の薬が 効かなかった。' },
+  myco: { best: ['azm', 'cam'], rapid: 1, hist: '熱のわりに 元気。かわいた せきが 何週間も 続く。学校で はやっている。' },
+  campy: { best: ['azm'], hist: '3日ほど前に 焼き鳥・鶏の たたきを 食べた。' },
+  pseudo: { best: ['tazpip', 'cfpm'], hist: '入院中で、人工呼吸器や 管が 入っている。' },
+  mdrp: { best: ['cl'], hist: '入院中。カルバペネム系も ニューキノロン系も 効かなかった。' },
+  cdiff: { best: ['fdx', 'vcm'], rapid: 1, hist: '最近、抗菌薬を 使っていた。そのあと げりが 続く。' },
+  tb: { best: ['inh', 'rfp', 'pza', 'eb'], hist: '2週間以上 せきが 続く。体重が へり、夜に 汗をかく。' },
+  pylori: { best: ['amox', 'cam', 'vpz'], hist: '胃が いたい・胃カメラで 胃かいようが 見つかった。' },
+  flu: { best: ['osel', 'zana', 'bxm'], rapid: 1, hist: 'クラスで はやっている。急に 38度以上の 熱が出て、体の ふしぶしが いたい。' },
+  flu_boss: { best: ['osel', 'zana', 'bxm'], rapid: 1, hist: '学校中で はやっている。急な 高い熱。' },
+  adeno: { rapid: 1, hist: 'プールの あとから、高い熱・のどの いたみ・目が赤い。' },
+  noro: { rapid: 1, hist: '家族も はいている。カキ(貝)を 食べた。' },
+  rsv: { rapid: 1, hist: '小さい子。鼻水のあと ゼーゼーいう せき。' },
+  covid: { best: ['nmv', 'ens', 'rdv'], rapid: 1, hist: '家族に 陽性の 人がいる。のどの いたみと 熱。においが わかりにくい。' },
+  vzv: { best: ['vacv'], hist: '体の 片側だけ ピリピリ いたくて、帯のように 水ぶくれ。' },
+  hsv: { best: ['vacv', 'acv'], hist: 'つかれると 口の まわりに 水ぶくれが 出る。前にも あった。' },
+  tinea: { best: ['tbf'], hist: '部活で 毎日 くつを はいている。足の 指の間が かゆい。' },
+  candida: { best: ['flcz', 'mcfg'], hist: '抗菌薬や ステロイドを 使っている。口の中に 白い こけ。' },
+  asper: { best: ['vrcz'], hist: 'めんえきを 下げる 治療中。工事現場の そばの 病院。' },
+  pinworm: { best: ['pyr'], hist: '夜、おしりを かいている。セロハンテープ検査で 卵。' },
+  ascaris: { best: ['pyr', 'mbz'], hist: '洗っていない 野菜を 食べた。' },
+  anisakis: { best: ['endo'], hist: '数時間前に しめサバ・イカの 刺身を 食べた。' },
+  malaria: { best: ['al', 'apg'], rapid: 1, hist: 'アフリカから 帰ってきた。予防薬は 飲んでいない。' },
+  giardia: { best: ['mnz'], hist: '海外で 生水や 氷を 口にした。においの 強い げり。' },
+  scabies: { best: ['ivm', 'phen'], hist: '施設で 同じ部屋の 人も かゆがっている。手首や 指の間に 線のような あと。' },
+  mening: { best: ['ctrx'], hist: '寮で 暮らしている。急な 頭痛と 高い熱、首を 前に 曲げられない。' },
+  tetanus: { best: ['mnz'], hist: '畑仕事で 古いクギを ふんだ。ワクチンを 打ったか わからない。' },
+  legion: { best: ['lvfx', 'azm'], rapid: 1, hist: '1週間前に 温泉・ジャグジーに 行った。' },
+  pertussis: { best: ['azm', 'cam'], hist: '息を 吸うときに ヒューと 音がする はげしい せきが 何週間も。' },
+  listeria: { best: ['abpc'], hist: 'ナチュラルチーズや 生ハムが 好き。にんしん中・高齢。' },
+  entero: { best: ['abpc'], hist: 'おしっこの 管が 入っている。セフェム系を 使っていた。' },
+  vre: { best: ['lzd', 'dap'], hist: '入院中。バンコマイシンを 長く 使っていた。' },
+  cre: { best: ['cl'], hist: '海外の 病院で 入院していた。カルバペネム系も 効かない。' },
+  typhoid: { best: ['ctrx', 'azm'], hist: '南アジアへの 旅行から 帰ってから、熱が 下がらない。' },
+  cholera: { best: ['doxy', 'azm'], hist: '水の よごれた 地域。米のとぎ汁のような げりが 大量に。' },
+  scrub: { best: ['doxy', 'mino'], hist: '秋に 山や 畑に 入った。黒い かさぶたの ような さされあと。' },
+  lyme: { best: ['doxy'], hist: '北海道の 森で マダニに さされた。さされた所が 赤い輪のように 広がる。' },
+  cmv: { best: ['gcv'], hist: '臓器移植の あと、めんえきを 下げる 薬を 飲んでいる。' },
+  hbv: { best: ['etv'], hist: '健康診断で 肝臓の 数値が 高かった。家族にも B型肝炎の 人がいる。' },
+  hcv: { best: ['sofvel'], hist: '健康診断で 肝臓の 数値が 高い。昔、輸血を うけた ことがある。' },
+  measles: { rapid: 0, hist: 'ワクチンを 打っていない。高い熱、せき、口の中に 白い ぽつぽつ(コプリック斑)。' },
+  dengue: { hist: '東南アジアから 帰ってきた。蚊に たくさん さされた。' },
+  pcp: { best: ['st'], hist: 'めんえきが とても 弱っている。動くと すぐ 息が くるしい。' },
+  crypto: { best: ['amph', 'fc'], hist: 'めんえきが 弱っている。家の 近くに ハトが 多い。' },
+  echino: { best: ['abz'], hist: '北海道で 沢の水を 飲んだり、キタキツネに さわったり した。' },
+  amoeba: { best: ['mnz'], hist: '海外で 生水を 飲んだ。血の まじる げり。' },
+};
+const isBest = (d, p) => !!(CLINIC[p.id] && CLINIC[p.id].best && CLINIC[p.id].best.includes(d.id));
+
+// 検査のメニュー
+const TESTS = [
+  { id: 'ask', em: '🗣️', ja: '問診', cost: 1, desc: 'いつ・どこで・だれから? 話を聞いて ヒントを さがす' },
+  { id: 'gram', em: '🔬', ja: 'グラム染色', cost: 1, desc: '顕微鏡で 細菌の 形と 色を 見る(細菌かどうかも わかる)' },
+  { id: 'rapid', em: '🧪', ja: '迅速検査', cost: 1, desc: 'インフルエンザ・溶連菌など 決まった相手なら 15分で 名前が わかる' },
+  { id: 'culture', em: '🧫', ja: '培養・PCR', cost: 2, desc: 'じっくり 調べて 名前まで わかる(時間が かかるので 処方ポイント2)' },
+];
+const GRAM_SHAPE = { chain: 'くさりのように 並んだ', diplo: '2つずつ ペアの', grape: 'ブドウの房のような', rod: '棒の形の', rodthin: '細長い 棒の形の', spiral: 'らせん形の', spore: '芽胞をもつ 棒の形の', tiny: 'とても小さな' };

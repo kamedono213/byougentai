@@ -23,10 +23,11 @@ const shots = path.join(__dirname, '../shots'); fs.mkdirSync(shots, { recursive:
       B.tgt = B.foes.indexOf(f);
       const p = P[f.pid];
       const can = d => learned(d.id) && !(B.cd[d.id] > 0) && !B.usedTurn.has(d.id) && B.ap >= d.cost;
-      if (MODE === 'smart' && f.k < 3 && B.ap >= 1 && !(B.tested && B.tested.has(f))) { (B.tested = B.tested || new Set()).add(f); doTest(false); return 'test'; }
-      let list = DRUGS.filter(d => can(d) && effOf(d, p) >= 1).sort((a, b) => effOf(b, p) - effOf(a, p) || a.gut - b.gut);
+      if (MODE === 'smart' && f.k < 3 && B.ap >= 1 && !(B.tested && B.tested.has(f))) { (B.tested = B.tested || new Set()).add(f); const C = CLINIC[f.pid] || {}; const kind = C.rapid ? 'rapid' : B.ap >= 2 ? 'culture' : 'gram'; B.ap -= kind === 'culture' ? 2 : 1; doTestKind(kind); return 'test'; }
+      let list = DRUGS.filter(d => can(d) && effOf(d, p) >= 1 && !f.dots.some(x => x.id === d.id && x.t > 1)).sort((a, b) => (isBest(b, p) - isBest(a, p)) || effOf(b, p) - effOf(a, p) || a.gut - b.gut);
+      if (list.length && !p.combo && f.dots.length) list = [];
       if (MODE === 'kid' && Math.random() < 0.25) list = DRUGS.filter(can).sort(() => Math.random() - .5);
-      if (!list.length && (p.self || R.hp < R.max * .6)) list = DRUGS.filter(d => can(d) && (d.heal || d.guard));
+      if (!list.length) list = DRUGS.filter(d => can(d) && (R.hp < R.max * .7 ? (d.heal || d.guard) : d.immUp)).sort((a, b) => (b.heal || 0) - (a.heal || 0));
       if (list.length) { B.sel = list[0].id; await useDrug(list[0].id); return 'use ' + list[0].id; }
       endTurn(); return 'end';
     }
@@ -52,6 +53,7 @@ const shots = path.join(__dirname, '../shots'); fs.mkdirSync(shots, { recursive:
   console.log('tutorial', tut === 99 ? 'OK' : 'NG ' + tut);
   const result = [];
   await p.evaluate(() => { const L = lose; window.lose = undefined; lose = async function () { window.lastDeath = { foes: B.foes.map(f => f.pid + ':' + f.hp + '/' + f.max), fl: S.run.fl, res: S.run.resist, gut: S.run.gut, turn: B.turn, lv: JSON.stringify(S.run.lv) }; return L(); }; });
+  await p.evaluate(() => { const W = win; window.bst = []; win = async function () { window.bst.push({ s: S.run && S.run.stage, t: B.turn, d: B.dmgTaken }); return W(); }; });
   for (let n = 0; n < N; n++) for (const stage of STAGES_) {
     if (stage === 9) await p.evaluate(() => { S.clear = { 1: 1, 2: 1, 3: 1 }; const R = newRun(0, 0); Object.assign(R, { stage: 9, asc: 0, act: 1, coins: 40, items: ['hint'], mod: {} }); S.run = R; save(); chooseScenario(); });
     else await p.evaluate(st => { S.run = newRun(st, 0); save(); mapScreen(); }, stage);
@@ -72,6 +74,8 @@ const shots = path.join(__dirname, '../shots'); fs.mkdirSync(shots, { recursive:
   }
   await p.evaluate(() => zukan('p')); await shot('20-zukan');
   await p.evaluate(() => achScreen()); await shot('21-ach');
+  const bs = await p.evaluate(() => window.bst);
+  for (const s of [1, 2, 3, 9]) { const a = bs.filter(x => x.s === s); if (a.length) console.log('stage', s, 'battles', a.length, 'avgTurns', (a.reduce((q, x) => q + x.t, 0) / a.length).toFixed(1), 'avgDmg', (a.reduce((q, x) => q + x.d, 0) / a.length).toFixed(1)); }
   console.log('errors', errs.length, errs.slice(0, 8));
   await b.close();
 })();
