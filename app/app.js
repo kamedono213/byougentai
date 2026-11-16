@@ -319,6 +319,10 @@ const DRUGS = [
     desc: '結核菌の細胞壁(ミコール酸)を作れなくする。ほかの抗結核薬と組み合わせて使う。', fact: '結核の治療はふつう4種類の薬から始めて、6か月ほどつづける。' },
   { id: 'rfp', ja: 'リファンピシン', cls: '抗結核薬', cat: 'abx', cost: 1, cd: 0, dmg: 9, gut: 1, rsk: 1, eff: { tb: 2 },
     desc: '結核菌がRNAを作るのをじゃまする。おしっこや汗がオレンジ色になる。', fact: 'ほかの薬の効き方を変えてしまうので、飲み合わせに注意する。' },
+  { id: 'pza', ja: 'ピラジナミド', cls: '抗結核薬', cat: 'abx', cost: 1, cd: 0, dmg: 8, gut: 0, rsk: 1, eff: { tb: 2 },
+    desc: '酸性の場所に いる 結核菌に 効く。治療の はじめの 2か月に 使う。', fact: '結核の 標準治療は イソニアジド・リファンピシン・ピラジナミド・エタンブトールの 4剤で はじめる。' },
+  { id: 'eb', ja: 'エタンブトール', cls: '抗結核薬', cat: 'abx', cost: 1, cd: 0, dmg: 8, gut: 0, rsk: 1, eff: { tb: 2 },
+    desc: '結核菌の 細胞壁づくりを じゃまする。目(視力)への 副作用に 注意する。', fact: '色の 見え方が かわる 副作用が 出ることがある。' },
   { id: 'vpz', ja: 'ボノプラザン', cls: '胃酸をおさえる薬', cat: 'sup', cost: 1, cd: 0, dmg: 4, gut: 0, rsk: 0, eff: { pylori: 2 },
     desc: '胃酸をおさえて、抗菌薬が効きやすくする。ピロリ菌の除菌で抗菌薬2つと組み合わせる。', fact: 'ひとつだけでは菌はいなくならない。組み合わせて使う薬。' },
   // ---- 抗ウイルス薬
@@ -1052,7 +1056,17 @@ function startBattle(o) {
   if (R.cdNext && o.node !== 'boss' && !o.tut) { R.cdNext = false; B.foes = [B.foes[0], makeFoe('cdiff', 'battle', 0)]; B.foes[1].k = 3; B.foes[1].first = false; }
   save(); introFoes().then(async () => { if (B.foes.some(f => f.pid === 'cdiff') && !B.o.cdShown) { B.o.cdShown = 1; await cdHelp('前の治療で 善玉菌が へって、ディフィシル菌が ふえていた!'); } playerTurn(); });
 }
+async function ensureCombo(p) {
+  // 併用が必要な相手には、効く薬を かならず 2つ以上 持たせる(1つでは 勝てないので)
+  const own = DRUGS.filter(d => learned(d.id) && effOf(d, p) >= 1);
+  if (own.length >= 2) return;
+  const add = DRUGS.filter(d => !learned(d.id) && effOf(d, p) === 2).sort((a, b) => a.cost - b.cost).slice(0, 2 - own.length);
+  if (!add.length) return;
+  add.forEach(d => learn(d.id)); save();
+  await modal(`<div class="row c">${ART.patho(p, 3, 80)}</div><b>🤝 ${p.ja}には 併用が 必要!</b><p>1つの薬だけでは 耐性が できやすいので、2つ以上を 同じターンに 使おう。</p><p class="got">💊 ${add.map(d => '<b>' + d.ja + '</b>').join('・')}を おぼえた!</p>`, ['たたかう']);
+}
 async function introFoes() {
+  for (const f of B.foes) if (P[f.pid].combo) await ensureCombo(P[f.pid]);
   for (const f of B.foes) {
     const p = P[f.pid];
     if (f.conv) await modal(`<div class="row c">${ART.patho(p, 3, 90)}</div><b>⚠️ 耐性菌に なっていた!</b><p>耐性メーターが たまっていたので、<b>${p.ja}</b>が あらわれた。</p><p class="note">${p.fact}</p>`, ['たたかう']);

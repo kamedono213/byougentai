@@ -311,7 +311,17 @@ function startBattle(o) {
   if (R.cdNext && o.node !== 'boss' && !o.tut) { R.cdNext = false; B.foes = [B.foes[0], makeFoe('cdiff', 'battle', 0)]; B.foes[1].k = 3; B.foes[1].first = false; }
   save(); introFoes().then(async () => { if (B.foes.some(f => f.pid === 'cdiff') && !B.o.cdShown) { B.o.cdShown = 1; await cdHelp('前の治療で 善玉菌が へって、ディフィシル菌が ふえていた!'); } playerTurn(); });
 }
+async function ensureCombo(p) {
+  // 併用が必要な相手には、効く薬を かならず 2つ以上 持たせる(1つでは 勝てないので)
+  const own = DRUGS.filter(d => learned(d.id) && effOf(d, p) >= 1);
+  if (own.length >= 2) return;
+  const add = DRUGS.filter(d => !learned(d.id) && effOf(d, p) === 2).sort((a, b) => a.cost - b.cost).slice(0, 2 - own.length);
+  if (!add.length) return;
+  add.forEach(d => learn(d.id)); save();
+  await modal(`<div class="row c">${ART.patho(p, 3, 80)}</div><b>🤝 ${p.ja}には 併用が 必要!</b><p>1つの薬だけでは 耐性が できやすいので、2つ以上を 同じターンに 使おう。</p><p class="got">💊 ${add.map(d => '<b>' + d.ja + '</b>').join('・')}を おぼえた!</p>`, ['たたかう']);
+}
 async function introFoes() {
+  for (const f of B.foes) if (P[f.pid].combo) await ensureCombo(P[f.pid]);
   for (const f of B.foes) {
     const p = P[f.pid];
     if (f.conv) await modal(`<div class="row c">${ART.patho(p, 3, 90)}</div><b>⚠️ 耐性菌に なっていた!</b><p>耐性メーターが たまっていたので、<b>${p.ja}</b>が あらわれた。</p><p class="note">${p.fact}</p>`, ['たたかう']);
