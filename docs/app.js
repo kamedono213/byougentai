@@ -856,7 +856,7 @@ function save() { S.t = Date.now(); try { localStorage.setItem(SAVE_KEY, JSON.st
 const st = (k, n = 1) => { S.stat[k] = (S.stat[k] || 0) + n; };
 
 function toast(t, ms = 2200) { let box = document.getElementById('toasts'); if (!box) { box = document.createElement('div'); box.id = 'toasts'; document.body.appendChild(box); } const d = document.createElement('div'); d.className = 'toast'; d.innerHTML = t; box.appendChild(d); setTimeout(() => d.classList.add('out'), ms); setTimeout(() => d.remove(), ms + 400); }
-function screen(html, cls = '', keep) { if (keep) { app.className = cls; app.innerHTML = html; return; } app.className = cls; app.innerHTML = html; app.scrollTop = 0; window.scrollTo(0, 0); }
+function screen(html, cls = 'fitScr', keep) { if (keep) { app.className = cls; app.innerHTML = html; return; } app.className = cls; app.innerHTML = html; app.scrollTop = 0; window.scrollTo(0, 0); }
 function topBar(title, back, opt = {}) {
   return `<div class="top">${back ? `<button class="back" id="${opt.confirm ? 'quit' : 'back'}" ${opt.confirm ? '' : 'data-noconfirm'}>← ${opt.label || 'もどる'}</button>` : '<span></span>'}<h2>${title}</h2><span></span></div>`;
 }
@@ -1227,7 +1227,7 @@ function renderBattle() {
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
         <button class="btn sm end" id="end">ターン終了</button></div>
       <div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
-      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}"><span class="cost">${d.cost}</span><b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${d.brand ? `<span class="cls">${d.brand}</span>` : ''}<span class="gi">${GI[d.cat]}</span>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
+      <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${d.cat === 'sup' ? '#9aa8bd' : CAT[{ abx: 'bac', vir: 'vir', fun: 'fun', par: 'par' }[d.cat]].col}"><span class="cost">${d.cost}</span><b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${d.brand ? `<span class="cls">${d.brand}</span>` : ''}<span class="gi" data-nofuri>${GI[d.cat]}</span>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
       <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : '<span class="note">薬を タップで えらぶ・長おしで せつめい</span>'}</div>
     </div>`, 'battleScr', true);
   const dr = $('.drugs'); if (dr) dr.scrollTop = keepS; window.scrollTo(0, keepY);
@@ -1901,8 +1901,8 @@ const BOOK = (() => {
       e.setAttribute('data-fx', '1');
       const rt = e.getAttribute('data-rt') || ''; const base = e.textContent.length; if (!rt || !base) return;
       const fs = parseFloat(getComputedStyle(e).fontSize) || 14;
-      const rtW = rt.length * Math.max(fs * 0.5, 7.5) * 1.02, w = e.getBoundingClientRect().width;
-      if (rtW > w + 1) { const add = (rtW - w) / base; e.style.setProperty('letter-spacing', add.toFixed(1) + 'px', 'important'); e.style.setProperty('padding-right', '0', 'important'); }
+      const rtW = rt.length * Math.max(fs * 0.5, 7.5) * 0.9, w = e.getBoundingClientRect().width;
+      if (rtW > w * 1.12 + 2) { const add = (rtW - w) / base; e.style.setProperty('letter-spacing', add.toFixed(1) + 'px', 'important'); e.style.setProperty('padding-right', '0', 'important'); }
     });
   };
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) fix(n); }).observe(document.body, { childList: true, subtree: true });

@@ -132,8 +132,8 @@ const BOOK = (() => {
       e.setAttribute('data-fx', '1');
       const rt = e.getAttribute('data-rt') || ''; const base = e.textContent.length; if (!rt || !base) return;
       const fs = parseFloat(getComputedStyle(e).fontSize) || 14;
-      const rtW = rt.length * Math.max(fs * 0.5, 7.5) * 1.02, w = e.getBoundingClientRect().width;
-      if (rtW > w + 1) { const add = (rtW - w) / base; e.style.setProperty('letter-spacing', add.toFixed(1) + 'px', 'important'); e.style.setProperty('padding-right', '0', 'important'); }
+      const rtW = rt.length * Math.max(fs * 0.5, 7.5) * 0.9, w = e.getBoundingClientRect().width;
+      if (rtW > w * 1.12 + 2) { const add = (rtW - w) / base; e.style.setProperty('letter-spacing', add.toFixed(1) + 'px', 'important'); e.style.setProperty('padding-right', '0', 'important'); }
     });
   };
   new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) fix(n); }).observe(document.body, { childList: true, subtree: true });

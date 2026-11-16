@@ -170,6 +170,53 @@ a { color: var(--mute); }
 .bdrug { display: inline-block; background: #fff; border: 1.5px solid #d9c9a6; border-radius: 8px; padding: 1px 6px; margin: 2px; font-size: 12.5px; font-weight: 800; cursor: pointer; }
 .bpage details { margin: 4px 0; } .bpage summary { cursor: pointer; padding: 4px; }
 .vital { background: #3a1414; border: 1.5px solid #ff6b6b; border-radius: 8px; padding: 6px; font-weight: 800; }
+/* どの画面も 画面の高さに おさめる。長い一覧だけ 中で スクロール */
+#app.fitScr, #app.mapScr, #app.titleScr, #app.manual { height: 100vh; height: 100dvh; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
+#app.fitScr > *, #app.mapScr > * { flex: none; }
+#app.fitScr > .reward, #app.fitScr > .shop, #app.fitScr > .stages, #app.fitScr > .zgrid, #app.fitScr > .zlist, #app.fitScr > .achs, #app.fitScr > .looks { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding-bottom: 6px; }
+.shop #out, .reward #skip { position: sticky; bottom: 0; z-index: 2; box-shadow: 0 -6px 12px rgba(0,0,0,.4); }
+#app.mapScr { overflow: hidden; } #app.mapScr .mapwrap { flex: 1 1 auto; height: auto; min-height: 0; }
+#app.mapScr > p { margin: 4px 0 0; font-size: 11px; }
+#app.manual .page { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+#app.titleScr { overflow-y: auto; }
+#app.titleScr .title { gap: clamp(6px, 1.4dvh, 12px); padding-top: clamp(2px, 1dvh, 10px); }
+@media (max-height: 760px) {
+  .titleScr .logo h1 { font-size: 21px; } .titleScr .logo svg { width: 50px; height: 50px; }
+  .titleScr .title > .row.c { display: none; }
+  .titleScr .btn { padding: 8px 12px; } .titleScr .btn.big { font-size: 16px; padding: 10px; }
+  .titleScr .title > p { margin: 0; }
+}
+/* バトルは 必ず 1画面に おさめる(iPhone SE2 375×667 〜 430×932 で 可変) */
+#app.battleScr { height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding: 6px 8px 8px; }
+.battleScr .status { flex: none; padding: 4px 8px; }
+.battleScr .relics { flex: none; margin: 3px 0; min-height: 0; }
+.battleScr .relic, .battleScr .item { font-size: 14px; padding: 1px 6px; }
+.battleScr .pause { top: 44px; padding: 1px 8px; }
+.battleScr .tip { flex: none; font-size: 12px; line-height: 1.6; padding: 4px 8px; max-height: 5.2em; overflow-y: auto; }
+.battleScr .scene { flex: none; height: clamp(196px, 40dvh, 340px); overflow: hidden; align-items: stretch; }
+.battleScr .scene .left { align-self: end; }
+.battleScr .right { align-items: stretch; height: 100%; min-height: 0; }
+.battleScr .foe { min-height: 0; max-height: 100%; overflow-y: auto; align-content: end; gap: 1px; scrollbar-width: none; }
+.battleScr .scene .doc { width: clamp(44px, 9dvh, 76px); height: auto; }
+.battleScr .scene .pat { width: clamp(60px, 11dvh, 92px); height: auto; }
+.battleScr .foe .pz { width: clamp(46px, 10.5dvh, 104px); height: auto; }
+.battleScr .foe .note { font-size: 10px; }
+.battleScr .finfo { max-height: 3.6em; overflow-y: auto; }
+.battleScr .gram { width: clamp(24px, 4.5dvh, 38px); height: auto; }
+.battleScr .drug { min-height: 50px; padding: 12px 3px 4px; }
+.battleScr .drug .gi { margin-top: 1px; }
+.battleScr .shelf { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 4px; padding: 6px; margin-top: 4px; }
+.battleScr .shtop, .battleScr .tabs, .battleScr .usebar { flex: none; }
+.battleScr .drugs { flex: 1 1 auto; min-height: 0; max-height: none; }
+.battleScr .usebar { min-height: 34px; }
+.battleScr .usebar .btn { padding: 6px 14px; }
+@media (max-height: 700px) {
+  .battleScr .drug { min-height: 52px; padding-top: 12px; }
+  .battleScr .tabs .tab { padding: 2px 8px; font-size: 11px; }
+  .battleScr .shtop .btn.sm { padding: 4px 8px; }
+  .battleScr .foe .note { display: none; }
+  .battleScr .tip { max-height: 3.4em; }
+}
 /* 報酬・ショップ */
 .reward, .shop { display: grid; gap: 8px; }
 /* 図鑑 */
