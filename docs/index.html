@@ -271,6 +271,14 @@ a { color: var(--mute); }
 .xray { border-radius: 10px; box-shadow: 0 0 0 3px #333; }
 .dc-fam { font-size: 11.5px; font-weight: 800; background: var(--c); color: #10203a; border-radius: 8px; padding: 0 8px; }
 .drug .hz { width: clamp(30px, 5dvh, 44px); height: auto; margin-top: -4px; }
+.cells { display: flex; gap: 4px; align-items: stretch; flex: none; }
+.cl-h { font-size: 10.5px; font-weight: 800; color: #ffe9a8; line-height: 1.3; display: grid; align-content: center; min-width: 4.6em; } .cl-h small { color: #c9b88f; font-size: 9.5px; }
+.cell { --c: #888; flex: 1; background: #fff8ea; color: #2b1d0a; border: 2.5px solid var(--c); border-radius: 10px; padding: 2px; display: flex; align-items: center; gap: 2px; font-size: 10.5px; line-height: 1.15; min-width: 0; }
+.cell b { overflow-wrap: anywhere; text-align: left; } .cell.off { opacity: .4; } .cell .cz { flex: none; width: clamp(22px, 3.6dvh, 30px); height: auto; }
+.btn.wait { background: #2a4a3a; border-color: #4cd38a; font-size: 11px; line-height: 1.15; }
+.battleScr .drugs { grid-auto-rows: max-content; align-content: start; }
+.battleScr .shtop { gap: 4px; } .battleScr .shtop .btn.sm { padding: 5px 7px; font-size: 12px; white-space: nowrap; line-height: 1.3; }
+.battleScr .ap i { width: 13px; height: 13px; }
 /* 報酬・ショップ */
 .reward, .shop { display: grid; gap: 8px; }
 /* 図鑑 */

@@ -95,7 +95,7 @@ const MANUAL = {
     { t: 'きみは 新人の お医者さん!', b: `<div class="row c">${ART.doctor(S.look, 90)}${ART.patient('kid', true, 80)}</div><p>病気の原因になる 小さな「<b>病原体</b>」を、<b>薬</b>で やっつけて 患者さんを 助けよう。</p><p class="note">病原体は 本物の名前、薬も 本物の名前だよ。</p>` },
     { t: '病原体は 大きく 4つ!', b: `<div class="cats">${catCard('bac', 'strep')}${catCard('vir', 'flu')}${catCard('fun', 'tinea')}${catCard('par', 'pinworm')}</div>` },
     { t: '病原体によって 効く薬が ちがう', b: `<div class="map4"><div><b style="color:${CAT.bac.col}">細菌</b> → 抗菌薬</div><div><b style="color:${CAT.vir.col}">ウイルス</b> → 抗ウイルス薬</div><div><b style="color:${CAT.fun.col}">真菌</b> → 抗真菌薬</div><div><b style="color:${CAT.par.col}">寄生虫</b> → 抗寄生虫薬</div></div><p>ちがう分類の薬は <b>効かない</b>。たとえば「抗菌薬」は ウイルスには 効かない。</p>` },
-    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p>` },
+    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p><p>🛡️ <b>めんえき隊</b>(好中球・キラーT細胞など)も 毎ターン 1つ 使える。相手に 合う 細胞を えらぼう。薬が 効いて 待つだけの時は <b>⏩様子見</b>。</p>` },
     { t: '最初の薬を 2つ もらった!', b: `<div class="row c"><div class="drugcard big" style="--c:${CAT.bac.col}"><b>ペニシリン</b><span>抗菌薬</span></div><div class="drugcard big" style="--c:${CAT.vir.col}"><b>オセルタミビル</b><span>タミフル・抗ウイルス薬</span></div></div><p>ペニシリンは 細菌の薬、タミフルは インフルエンザウイルスの薬。</p><p class="note">※ ゲームの中の話だよ。本当の治療は お医者さんが 決めるよ。</p>` },
   ],
   virus: [{ t: 'こんどは ウイルス!', b: `<div class="row c">${ART.patho(P.flu, 3, 90)}</div><p>インフルエンザは <b>ウイルス</b>。ウイルスには <b>抗ウイルス薬</b>(タミフルなど)を 使おう。</p><p>ペニシリン(抗菌薬)は ウイルスには 効かないよ。</p>` }],
@@ -390,7 +390,8 @@ function renderBattle() {
       <div class="shtop"><span class="ap">${Array.from({ length: B.apMax }, (_, i) => `<i class="${i < B.ap ? 'on' : ''}"></i>`).join('')}</span>
         <button class="btn sm" id="test" ${tf && !B.busy ? '' : 'disabled'}>🔬検査</button>
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
-        <button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
+        <button class="btn sm wait" id="wait" ${B.busy ? 'disabled' : ''}>⏩様子見</button><button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
+      ${B.cells ? `<div class="cells"><span class="cl-h">🛡️めんえき隊<br><small>${B.cellUsed ? 'つかった' : '1つ えらぶ'}</small></span>${B.cells.map(id => `<button class="cell ${B.cellUsed ? 'off' : ''}" data-c="${id}" style="--c:${CL[id].col}">${ART.cell(id, 30)}<b>${CL[id].ja}</b></button>`).join('')}</div>` : ''}
       <div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
       <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${drugArt(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
       <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : (B.ap ? '<span class="note">薬 → 病原体を タップ。長おしで カード</span>' : '<span class="note warn">処方ポイントが なくなった。ターン終了を おそう</span>')}</div>
@@ -408,7 +409,14 @@ function renderBattle() {
     e.onclick = () => { if (long) return; if (B.busy) return; SE.play('select'); B.sel = B.sel === e.dataset.d ? null : e.dataset.d; renderBattle(); };
   });
   const u = $('#use'); if (u) u.onclick = () => useDrug(B.sel);
-  $('#end').onclick = () => endTurn();
+  $('#end').onclick = () => { B.auto = false; endTurn(); };
+  const wt = $('#wait'); if (wt) wt.onclick = () => { if (B.busy) return; B.auto = { turns: 0, hp: S.run.hp, kills: B.foes.filter(f => f.hp <= 0).length }; toast('⏩ 様子を みる(何か かわったら 止まるよ)', 1800); endTurn(); };
+  app.querySelectorAll('[data-c]').forEach(e => {
+    let tm = null, long = false;
+    e.addEventListener('pointerdown', () => { long = false; tm = setTimeout(() => { long = true; const c = CL[e.dataset.c]; modal(`<div class="row c">${ART.cell(c.id, 90)}</div><b class="big">${c.ja}</b><p>${c.desc}</p><p class="note">めんえき隊は 毎ターン 1つ 使える(処方ポイント 0)。栄養・安静で 強くなり、ステロイドや 夜ふかしで 弱くなる。</p>`, ['OK']); }, 450); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => e.addEventListener(ev, () => clearTimeout(tm)));
+    e.onclick = () => { if (long || B.cellUsed || B.busy) return; useCell(e.dataset.c); };
+  });
   $('#quit').onclick = () => { B = null; title(); };
   const t = $('#test'); if (t) t.onclick = () => testMenu();
   const h = $('#hint'); if (h) h.onclick = () => doHint();
@@ -609,7 +617,14 @@ async function playerTurn() {
   B.foes.forEach(f => f.combo = new Set());
   if (R.gut <= 0 && R.stage <= 1 && B.turn > 1) { R.hp -= 1; toast('🥛 善玉菌が へって おなかが ゆるい… ❤️-1'); if (R.hp <= 0) return lose(); }
   if (B.tgt == null || !B.foes[B.tgt] || B.foes[B.tgt].hp <= 0) B.tgt = B.foes.findIndex(f => f.hp > 0);
+  if (R.stage >= 1 && !B.o.tut) dealCells();
   renderBattle();
+  if (B.auto) {
+    const a = B.auto; a.turns++;
+    const why = B.foes.filter(f => f.hp <= 0).length > a.kills ? '病原体を たおした' : R.hp < a.hp * 0.7 ? '体力が へってきた' : !B.foes.some(f => f.hp > 0 && (f.dots.length || f.self)) ? '薬が 切れた' : a.turns >= 6 ? '6ターン たった' : '';
+    if (why) { B.auto = false; toast(`⏸ 様子を みるのを 止めた(${why})`, 2400); renderBattle(); }
+    else setTimeout(() => { if (B && B.auto && !B.busy) endTurn(); }, 500);
+  }
 }
 async function endTurn() {
   if (B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();

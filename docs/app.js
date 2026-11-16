@@ -1069,6 +1069,62 @@ ART.hero = (d, size = 48) => {
   return `<svg viewBox="-4 -4 108 108" width="${size}" height="${size}" class="hz">${back}${body}${embl}${front}${face(50, eyeY, sh === 'quad' ? .8 : .9)}${chest}</svg>`;
 };
 
+// ---------- めんえき隊(毎ターン 3まいから 1まい えらんで 使える。処方ポイント 0)
+// 相手しだいで 強い細胞が かわる(細菌 → 好中球、ウイルス → キラーT細胞・NK細胞、寄生虫 → 好酸球)
+const CELLS = [
+  { id: 'neut', ja: '好中球', col: '#7fc8ff', desc: '細菌や カビに とびかかって 食べる。いちばん先に かけつける。', fx: (p, pow) => ({ dmg: Math.round((3 + pow) * (p.cat === 'bac' ? 1.6 : p.cat === 'fun' ? 1.3 : .5)) }) },
+  { id: 'mac', ja: 'マクロファージ', col: '#ffb36b', desc: '何でも 食べる 大食いの 細胞。体の そうじも して 少し 回復。', fx: (p, pow) => ({ dmg: 2 + Math.floor(pow / 2), heal: 3 }) },
+  { id: 'killt', ja: 'キラーT細胞', col: '#ff6b9a', desc: 'ウイルスに のっとられた 細胞を こわす。ウイルスに 強い。', fx: (p, pow) => ({ dmg: Math.round((3 + pow) * (p.cat === 'vir' ? 1.8 : .5)) }) },
+  { id: 'nk', ja: 'NK細胞', col: '#c59bff', desc: 'ナチュラルキラー。ウイルスに 強いが、ときどき 見のがす。', fx: (p, pow) => Math.random() < .25 ? { dmg: 0, miss: 1 } : ({ dmg: Math.round((4 + pow) * (p.cat === 'vir' ? 1.7 : .7)) }) },
+  { id: 'anti', ja: '抗体', col: '#ffd34d', desc: 'B細胞が 作る 目じるし。病原体に くっついて こうげきを 弱める(🛡️+5、どくそを 消す)。', fx: (p, pow, f) => ({ guard: 5 + Math.floor(pow / 2), detox: f.toxin }) },
+  { id: 'eos', ja: '好酸球', col: '#ff8080', desc: '寄生虫と たたかう 細胞。虫には とても 強い。', fx: (p, pow) => ({ dmg: Math.round((3 + pow) * (p.cat === 'par' ? 2 : .5)) }) },
+  { id: 'helper', ja: 'ヘルパーT細胞', col: '#7ad36b', desc: 'めんえき隊の 司令官。このバトルの間 めんえきを +1。', fx: () => ({ immUp: 1 }) },
+];
+const CL = Object.fromEntries(CELLS.map(c => [c.id, c]));
+ART.cell = (id, size = 40) => {
+  const c = CL[id], col = c.col;
+  const eyes = `<circle cx="42" cy="50" r="5" fill="#fff"/><circle cx="58" cy="50" r="5" fill="#fff"/><circle cx="43" cy="51" r="2.5" fill="#222"/><circle cx="59" cy="51" r="2.5" fill="#222"/><path d="M44 60 q6 5 12 0" stroke="#222" stroke-width="2" fill="none"/>`;
+  const B = {
+    neut: `<circle cx="50" cy="52" r="36" fill="${col}" stroke="#3a7fb0" stroke-width="3"/><path d="M30 34 q8 -8 14 0 q6 -8 14 0 q6 -8 12 2" stroke="#5a4aa0" stroke-width="7" fill="none" stroke-linecap="round"/>`,
+    mac: `<path d="M50 14 q30 2 36 26 q10 30 -12 46 q-24 16 -48 -4 q-20 -20 -4 -48 q10 -20 28 -20z" fill="${col}" stroke="#c4702a" stroke-width="3"/><circle cx="70" cy="34" r="6" fill="#c4702a" opacity=".5"/>`,
+    killt: `<circle cx="50" cy="52" r="34" fill="${col}" stroke="#c43a6a" stroke-width="3"/>${[0, 60, 120, 180, 240, 300].map(a => `<line x1="${50 + Math.cos(a * Math.PI / 180) * 34}" y1="${52 + Math.sin(a * Math.PI / 180) * 34}" x2="${50 + Math.cos(a * Math.PI / 180) * 44}" y2="${52 + Math.sin(a * Math.PI / 180) * 44}" stroke="#c43a6a" stroke-width="4"/>`).join('')}<path d="M34 34 l32 0" stroke="#222" stroke-width="5"/>`,
+    nk: `<circle cx="50" cy="52" r="34" fill="${col}" stroke="#7a4abf" stroke-width="3"/>${[[30, 72], [70, 70], [26, 44], [74, 40]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="4" fill="#7a4abf"/>`).join('')}`,
+    anti: `<path d="M50 90 v-34 l-24 -32 M50 56 l24 -32" stroke="#c48a00" stroke-width="14" fill="none" stroke-linecap="round"/><path d="M50 90 v-34 l-24 -32 M50 56 l24 -32" stroke="${col}" stroke-width="9" fill="none" stroke-linecap="round"/>`,
+    eos: `<circle cx="50" cy="52" r="34" fill="#ffe0e0" stroke="#c44a4a" stroke-width="3"/>${[[34, 34], [62, 30], [30, 64], [70, 66], [50, 76], [72, 46]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="5" fill="${col}"/>`).join('')}`,
+    helper: `<circle cx="50" cy="56" r="32" fill="${col}" stroke="#3a8a3a" stroke-width="3"/><path d="M28 30 l22 -14 l22 14z" fill="#3a5a8a"/><rect x="40" y="10" width="20" height="8" fill="#ffd34d"/>`,
+  };
+  const ey = id === 'anti' ? '' : eyes;
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" class="cz">${B[id]}${ey}</svg>`;
+};
+// ターンの はじめに 3まい くばる(相手に 強い 細胞が 1まいは 入りやすい)
+function dealCells() {
+  const f = B.foes.find(x => x.hp > 0); const p = f ? P[f.pid] : null;
+  const good = p ? { bac: 'neut', vir: 'killt', fun: 'neut', par: 'eos' }[p.cat] : null;
+  const pool = shuffle(CELLS.map(c => c.id));
+  let hand = pool.slice(0, 3);
+  if (good && !hand.includes(good) && Math.random() < 0.6) hand[rnd(3)] = good;
+  B.cells = hand; B.cellUsed = false;
+}
+async function useCell(id) {
+  if (!B || B.busy || B.cellUsed) return;
+  const R = S.run; let ti = B.tgt; if (!B.foes[ti] || B.foes[ti].hp <= 0) ti = B.foes.findIndex(f => f.hp > 0);
+  const f = B.foes[ti], p = P[f.pid];
+  const pow = clamp(B.immUp - B.immDown + Math.round(R.hp / R.max * 2), 0, 6);
+  const r = CL[id].fx(p, pow, f); B.cellUsed = true; st('cell');
+  if (r.immUp) { B.immUp = Math.min(4, B.immUp + r.immUp); SFX.play('guard'); floatTxt('🛡️めんえき UP', null, 'heal'); }
+  if (r.guard) { B.guard += r.guard; SFX.play('guard'); floatTxt('🛡️+' + r.guard, null, 'heal'); }
+  if (r.detox) { f.toxin = false; floatTxt('どくそを 消した!', ti, 'good'); }
+  if (r.heal) { R.hp = Math.min(R.max, R.hp + r.heal); floatTxt('❤️+' + r.heal, null, 'heal'); }
+  if (r.miss) { SFX.play('hitSoft'); renderBattle(); floatTxt('見のがした…', ti, 'bad'); return; }
+  if (r.dmg) {
+    let dmg = r.dmg; const blk = Math.min(f.block, dmg); f.block -= blk; dmg -= blk;
+    f.hp = Math.max(0, f.hp - dmg); SFX.play(r.dmg >= 8 ? 'best' : 'hit'); renderBattle(); await fx('hit', ti); floatTxt(`${CL[id].ja} -${dmg}`, ti);
+    if (r.dmg >= 8) banner(`💪 ${CL[id].ja} 大かつやく!`, 'best');
+    if (f.hp <= 0) await killFoe(ti);
+  }
+  afterAction();
+}
+
 // ---------- 場面ごとの 効果音(Web Audio で その場で 作る。音声ファイルは 使わない)
 // うまくいった時ほど 気持ちいい音に。SE の「音あり/なし」に したがう
 const SFX = (() => {
@@ -1218,7 +1274,7 @@ const MANUAL = {
     { t: 'きみは 新人の お医者さん!', b: `<div class="row c">${ART.doctor(S.look, 90)}${ART.patient('kid', true, 80)}</div><p>病気の原因になる 小さな「<b>病原体</b>」を、<b>薬</b>で やっつけて 患者さんを 助けよう。</p><p class="note">病原体は 本物の名前、薬も 本物の名前だよ。</p>` },
     { t: '病原体は 大きく 4つ!', b: `<div class="cats">${catCard('bac', 'strep')}${catCard('vir', 'flu')}${catCard('fun', 'tinea')}${catCard('par', 'pinworm')}</div>` },
     { t: '病原体によって 効く薬が ちがう', b: `<div class="map4"><div><b style="color:${CAT.bac.col}">細菌</b> → 抗菌薬</div><div><b style="color:${CAT.vir.col}">ウイルス</b> → 抗ウイルス薬</div><div><b style="color:${CAT.fun.col}">真菌</b> → 抗真菌薬</div><div><b style="color:${CAT.par.col}">寄生虫</b> → 抗寄生虫薬</div></div><p>ちがう分類の薬は <b>効かない</b>。たとえば「抗菌薬」は ウイルスには 効かない。</p>` },
-    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p>` },
+    { t: 'バトルの 画面', b: `<div class="mini"><div class="mtop">❤️ 患者の体力 ・ 🥛 善玉菌 ・ ⚠️ 耐性メーター</div><div class="mmid"><span>${ART.doctor(S.look, 44)}👨‍⚕️ きみと 患者</span><span>病原体 ${ART.patho(P.strep, 3, 44)}</span></div><div class="mbot">💊 薬だな(自分のターンに 出てくる)</div></div><p>薬を <b>タップ</b>で えらんで「つかう」。<b>長おし</b>で くわしい説明が 見られる。</p><p>右の病原体の上の マークは、<b>次に してくること</b>。⚔️は こうげき。</p><p>薬は 1回 使うと <b>3ターン 効きつづける</b>。同じ薬を 何回も 使う 必要は ない。患者の <b>めんえき</b>も 毎ターン 病原体を こうげきする。体力と 善玉菌が 多いほど 強いよ。</p><p>🛡️ <b>めんえき隊</b>(好中球・キラーT細胞など)も 毎ターン 1つ 使える。相手に 合う 細胞を えらぼう。薬が 効いて 待つだけの時は <b>⏩様子見</b>。</p>` },
     { t: '最初の薬を 2つ もらった!', b: `<div class="row c"><div class="drugcard big" style="--c:${CAT.bac.col}"><b>ペニシリン</b><span>抗菌薬</span></div><div class="drugcard big" style="--c:${CAT.vir.col}"><b>オセルタミビル</b><span>タミフル・抗ウイルス薬</span></div></div><p>ペニシリンは 細菌の薬、タミフルは インフルエンザウイルスの薬。</p><p class="note">※ ゲームの中の話だよ。本当の治療は お医者さんが 決めるよ。</p>` },
   ],
   virus: [{ t: 'こんどは ウイルス!', b: `<div class="row c">${ART.patho(P.flu, 3, 90)}</div><p>インフルエンザは <b>ウイルス</b>。ウイルスには <b>抗ウイルス薬</b>(タミフルなど)を 使おう。</p><p>ペニシリン(抗菌薬)は ウイルスには 効かないよ。</p>` }],
@@ -1513,7 +1569,8 @@ function renderBattle() {
       <div class="shtop"><span class="ap">${Array.from({ length: B.apMax }, (_, i) => `<i class="${i < B.ap ? 'on' : ''}"></i>`).join('')}</span>
         <button class="btn sm" id="test" ${tf && !B.busy ? '' : 'disabled'}>🔬検査</button>
         <button class="btn sm" id="hint" ${tf && tf.k < 3 && (B.free || R.items.includes('hint')) ? '' : 'disabled'}>💡${B.free ? 'タダ' : '×' + R.items.filter(x => x === 'hint').length}</button>
-        <button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
+        <button class="btn sm wait" id="wait" ${B.busy ? 'disabled' : ''}>⏩様子見</button><button class="btn sm end ${B.ap === 0 && !B.busy ? 'pulse' : ''}" id="end">ターン終了</button></div>
+      ${B.cells ? `<div class="cells"><span class="cl-h">🛡️めんえき隊<br><small>${B.cellUsed ? 'つかった' : '1つ えらぶ'}</small></span>${B.cells.map(id => `<button class="cell ${B.cellUsed ? 'off' : ''}" data-c="${id}" style="--c:${CL[id].col}">${ART.cell(id, 30)}<b>${CL[id].ja}</b></button>`).join('')}</div>` : ''}
       <div class="tabs">${tabs.map(c => `<button class="tab ${B.tab === c ? 'on' : ''}" data-tab="${c}">${c === 'all' ? 'ぜんぶ' : DCAT[c].replace('薬', '')}</button>`).join('')}</div>
       <div class="drugs">${shelf.filter(d => B.tab === 'all' || d.cat === B.tab).map(d => { const cd = B.cd[d.id] || 0, used = B.usedTurn.has(d.id), lv = R.lv[d.id] || 1; const off = cd > 0 || used || B.ap < d.cost; return `<button class="drug ${off ? 'off' : ''} ${B.sel === d.id ? 'sel' : ''}" data-d="${d.id}" style="--c:${dCol(d)}"><span class="cost">${'●'.repeat(d.cost)}</span>${drugArt(d, 34)}<b class="${d.ja.length > 9 ? 'l3' : d.ja.length > 6 ? 'l2' : ''}">${d.ja}</b>${lv > 1 ? `<span class="lv">Lv${lv}</span>` : ''}${cd > 0 ? `<span class="cd">あと${cd}</span>` : used ? '<span class="cd">使った</span>' : ''}</button>`; }).join('')}</div>
       <div class="usebar">${sel ? `<span><b>${sel.ja}</b> を ${tf ? (tf.k >= 3 ? P[tf.pid].ja : '???') : ''}に</span><button class="btn main" id="use">つかう</button>` : (B.ap ? '<span class="note">薬 → 病原体を タップ。長おしで カード</span>' : '<span class="note warn">処方ポイントが なくなった。ターン終了を おそう</span>')}</div>
@@ -1531,7 +1588,14 @@ function renderBattle() {
     e.onclick = () => { if (long) return; if (B.busy) return; SE.play('select'); B.sel = B.sel === e.dataset.d ? null : e.dataset.d; renderBattle(); };
   });
   const u = $('#use'); if (u) u.onclick = () => useDrug(B.sel);
-  $('#end').onclick = () => endTurn();
+  $('#end').onclick = () => { B.auto = false; endTurn(); };
+  const wt = $('#wait'); if (wt) wt.onclick = () => { if (B.busy) return; B.auto = { turns: 0, hp: S.run.hp, kills: B.foes.filter(f => f.hp <= 0).length }; toast('⏩ 様子を みる(何か かわったら 止まるよ)', 1800); endTurn(); };
+  app.querySelectorAll('[data-c]').forEach(e => {
+    let tm = null, long = false;
+    e.addEventListener('pointerdown', () => { long = false; tm = setTimeout(() => { long = true; const c = CL[e.dataset.c]; modal(`<div class="row c">${ART.cell(c.id, 90)}</div><b class="big">${c.ja}</b><p>${c.desc}</p><p class="note">めんえき隊は 毎ターン 1つ 使える(処方ポイント 0)。栄養・安静で 強くなり、ステロイドや 夜ふかしで 弱くなる。</p>`, ['OK']); }, 450); });
+    ['pointerup', 'pointerleave', 'pointercancel'].forEach(ev => e.addEventListener(ev, () => clearTimeout(tm)));
+    e.onclick = () => { if (long || B.cellUsed || B.busy) return; useCell(e.dataset.c); };
+  });
   $('#quit').onclick = () => { B = null; title(); };
   const t = $('#test'); if (t) t.onclick = () => testMenu();
   const h = $('#hint'); if (h) h.onclick = () => doHint();
@@ -1732,7 +1796,14 @@ async function playerTurn() {
   B.foes.forEach(f => f.combo = new Set());
   if (R.gut <= 0 && R.stage <= 1 && B.turn > 1) { R.hp -= 1; toast('🥛 善玉菌が へって おなかが ゆるい… ❤️-1'); if (R.hp <= 0) return lose(); }
   if (B.tgt == null || !B.foes[B.tgt] || B.foes[B.tgt].hp <= 0) B.tgt = B.foes.findIndex(f => f.hp > 0);
+  if (R.stage >= 1 && !B.o.tut) dealCells();
   renderBattle();
+  if (B.auto) {
+    const a = B.auto; a.turns++;
+    const why = B.foes.filter(f => f.hp <= 0).length > a.kills ? '病原体を たおした' : R.hp < a.hp * 0.7 ? '体力が へってきた' : !B.foes.some(f => f.hp > 0 && (f.dots.length || f.self)) ? '薬が 切れた' : a.turns >= 6 ? '6ターン たった' : '';
+    if (why) { B.auto = false; toast(`⏸ 様子を みるのを 止めた(${why})`, 2400); renderBattle(); }
+    else setTimeout(() => { if (B && B.auto && !B.busy) endTurn(); }, 500);
+  }
 }
 async function endTurn() {
   if (B.busy) return; B.busy = true; SFX.play('turn'); renderBattle();
