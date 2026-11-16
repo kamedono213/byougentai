@@ -373,7 +373,7 @@ function renderBattle() {
   const R = S.run;
   const foes = B.foes.map((f, i) => {
     const p = P[f.pid]; if (f.hp <= 0) return '';
-    return `<div class="foe ${B.tgt === i ? 'tgt' : ''}" data-t="${i}"><div class="ints">${intentHtml(f)}</div>${ART.patho(p, f.k, B.foes.filter(x => x.hp > 0).length > 1 ? 82 : 110)}${foeLabel(f)}<span class="note">${p.place}|${p.sym}</span>${f.info && f.info.gram && p.cat === 'bac' && p.gram !== 'none' && p.gram !== 'acid' ? gramSVG(p, 40) : ''}${f.info ? `<span class="finfo">${[f.info.askText, f.info.gramText, f.info.rapidText, f.info.cultText].filter(Boolean).map(esc).join('<br>')}</span>` : ''}
+    return `<div class="foe ${B.tgt === i ? 'tgt' : ''}" data-t="${i}"><div class="ints">${intentHtml(f)}</div>${ART.patho(p, f.k, B.foes.filter(x => x.hp > 0).length > 1 ? 82 : 110)}${foeLabel(f)}<span class="note">${p.place}|${p.sym}</span>${f.info && f.info.gram && p.cat === 'bac' && p.gram !== 'none' && p.gram !== 'acid' ? gramSVG(p, 40) : ''}${f.info && f.info.lines ? `<span class="finfo">${f.info.lines.slice(-3).map(esc).join('<br>')}</span>` : ''}
       ${f.dots.length ? `<div class="dots">${f.dots.map(x => `<span>💊${esc(D[x.id].ja.slice(0, 6))} ${x.t}</span>`).join('')}</div>` : ''}<div class="bar fhp"><i style="width:${f.hp / f.max * 100}%"></i><em>${f.hp}/${f.max}${f.block ? ` 🛡️${f.block}` : ''}</em></div>${p.combo && f.k >= 3 ? '<span class="note warn">併用が必要</span>' : ''}</div>`;
   }).join('');
   const tip = B.o.tip ? `<div class="tip">💡 ${B.o.tip}</div>` : '';
@@ -561,31 +561,16 @@ async function testMenu() {
   if (B.ap < cost(t)) return toast('処方ポイントが 足りない');
   B.ap -= cost(t); B.freeTest = 0; doTestKind(t.id);
 }
-function doTestKind(kind) {
-  const f = B.foes[B.tgt], p = P[f.pid], C = CLINIC[p.id] || {};
+async function doTestKind(kind) {
+  const f = B.foes[B.tgt], p = P[f.pid], t = TESTS.find(x => x.id === kind);
   f.info = f.info || {}; f.info[kind] = 1; st('test');
-  let msg = '';
-  if (kind === 'ask') { f.info.askText = C.hist || '特に 思いあたることは ない。'; msg = '🗣️ ' + f.info.askText; }
-  if (kind === 'gram') {
-    if (p.cat === 'bac') {
-      if (p.gram === 'none') f.info.gramText = 'グラム染色では 何も 見えない(細胞壁が ない菌かも)';
-      else if (p.gram === 'acid') { f.info.gramText = '染まりにくい 細長い菌(抗酸菌かも)'; f.k = Math.max(f.k, 1); }
-      else { f.info.gramText = (GRAM_SHAPE[p.shape] || '') + ' ' + GRAM[p.gram] + '菌'; f.k = Math.max(f.k, 2); }
-    } else if (p.cat === 'fun') { f.info.gramText = p.shape === 'mold' ? '糸のような カビが 見えた' : '酵母のような 丸い カビが 見えた'; f.k = Math.max(f.k, 1); }
-    else f.info.gramText = '細菌は 見えない(ウイルスか 寄生虫かも)';
-    msg = '🔬 ' + f.info.gramText;
-  }
-  if (kind === 'rapid') {
-    if (C.rapid) { f.k = 3; f.info.rapidText = '陽性: ' + p.ja; }
-    else f.info.rapidText = '陰性(この検査で わかる 相手では ない)';
-    msg = '🧪 ' + f.info.rapidText;
-  }
-  if (kind === 'culture') {
-    f.k = 3; const best = (C.best || []).map(id => D[id].ja);
-    f.info.cultText = p.ja + (best.length && (p.cat === 'bac' || p.cat === 'fun') ? ' ・ よく効く: ' + best.join('・') : '');
-    msg = '🧫 ' + f.info.cultText;
-  }
-  SFX.play('test'); if (f.k >= 3) setTimeout(() => SFX.play('reveal'), 450); toast(msg, 3400); renderBattle();
+  const r = examResult(kind, p);
+  const before = f.k; f.k = Math.max(f.k, r.k);
+  f.info.lines = (f.info.lines || []).concat(r.lines.map(l => t.em + ' ' + l));
+  SFX.play('test'); renderBattle();
+  await modal(`<div class="evem">${t.em}</div><b class="big">${t.ja}の 結果</b>${r.img ? `<div class="row c">${r.img}</div>` : ''}<div class="result">${r.lines.map(l => `<p>${l}</p>`).join('')}</div>${f.k >= 3 && before < 3 ? `<p class="got">🎯 正体が わかった: <b>${p.ja}</b></p>` : ''}`, ['OK']);
+  if (f.k >= 3 && before < 3) SFX.play('reveal');
+  renderBattle();
 }
 async function doTest(free) {
   const R = S.run, f = B.foes[B.tgt]; if (!f || f.k >= 3) return;
