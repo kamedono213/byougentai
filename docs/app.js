@@ -370,11 +370,13 @@ const DRUGS = [
   { id: 'ors', ja: '経口補水液', cls: '体をささえる', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 6, gut: 0, rsk: 0, eff: {},
     desc: '水分と塩分をすばやく補う。げり・はくときにいちばん大事。患者の体力を回復する。', fact: 'ふつうの水やお茶より、体にすばやく吸収されるように作られている。' },
   { id: 'apap', ja: 'アセトアミノフェン', brand: 'カロナール', cls: '解熱鎮痛薬', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 4, guard: 3, gut: 0, rsk: 0, eff: {},
-    desc: '熱やいたみをやわらげて、患者を楽にする(病原体はやっつけない)。次のこうげきを少しへらす。', fact: '子どもの熱にもよく使われる薬。' },
+    desc: '熱やいたみをやわらげて、患者を楽にする(病原体はやっつけない)。次のこうげきを少しへらす。インフルエンザや 水ぼうそうの 熱にも 使える。', fact: '子どもの熱や、インフルエンザの熱に すすめられる 解熱剤。' },
   { id: 'drip', ja: '点滴(輸液)', cls: '体をささえる', cat: 'sup', cost: 2, cd: 1, dmg: 0, heal: 9, gut: 0, rsk: 0, eff: {},
     desc: '血管から 水分と 塩分・栄養を 入れて、体力を 大きく 回復する。', fact: '口から 飲めないほど ぐったりした時に 使う。' },
-  { id: 'loxo', ja: 'ロキソプロフェン', brand: 'ロキソニン', cls: '解熱鎮痛薬(NSAIDs)', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 6, guard: 3, hurt: 1, gut: 0, rsk: 0, eff: {},
-    desc: '熱と いたみを しっかり おさえる。ただし 胃が あれやすい(副作用 ❤️-1)。', fact: '子どもの 熱には ふつう アセトアミノフェンが 使われる。' },
+  { id: 'dclf', ja: 'ジクロフェナク', brand: 'ボルタレン', cls: '解熱鎮痛薬(NSAIDs)', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 9, guard: 4, hurt: 1, nsaid: 2, gut: 0, rsk: 0, eff: {},
+    desc: '強い 痛み止め・熱さまし。<b>インフルエンザの 子どもには 使わない</b>(脳症が 重くなる おそれ)。胃も あれやすい。', fact: '日本では、インフルエンザの 子どもに ジクロフェナクや メフェナム酸を 使わないように 決められている。' },
+  { id: 'loxo', ja: 'ロキソプロフェン', brand: 'ロキソニン', cls: '解熱鎮痛薬(NSAIDs)', cat: 'sup', cost: 1, cd: 1, dmg: 0, heal: 6, guard: 3, hurt: 1, nsaid: 1, gut: 0, rsk: 0, eff: {},
+    desc: '熱と いたみを しっかり おさえる。ただし 胃が あれやすい(副作用 ❤️-1)。インフルエンザ・水ぼうそうの時は さける。', fact: 'インフルエンザの 熱には アセトアミノフェンが すすめられる。' },
   { id: 'pred', ja: 'プレドニゾロン', cls: 'ステロイド', cat: 'sup', cost: 1, cd: 2, dmg: 0, heal: 8, guard: 5, immDown: 3, gut: 0, rsk: 0, eff: {},
     desc: '炎症を 強く おさえて 体を 楽にする。でも <b>めんえきも 下げる</b>(めんえき -3)。', fact: 'ステロイドは よく効く 大事な薬。でも 感染症の時は 使い方に 注意が いる。' },
   { id: 'bif', ja: '整腸剤', sub: 'ビフィズス菌・酪酸菌など', brand: 'ビオフェルミン・ミヤBM', cls: '体をささえる', cat: 'sup', cost: 1, cd: 0, dmg: 0, heal: 2, gutUp: 3, gut: 0, rsk: 0, eff: {},
@@ -915,6 +917,7 @@ A('e10', '👑', '伝説の 名医', 'むげん病院で 10幕 クリア', () =>
 A('scn', '🗺️', 'どこでも 名医', 'むげん病院の 派遣先を ぜんぶ クリア', () => SCN.every(s => S.endless.scn && S.endless.scn[s.id]));
 A('best30', '✨', 'ばっちり 名医', 'こうか ばつぐんを 30回 出す(相手に ぴったりの 薬)', () => (S.stat.best || 0) >= 30);
 A('mitate10', '🩺', '見立て名人', '問診だけで 当たりを つけて 治療し、10回 正体を 当てる', () => (S.stat.mitate || 0) >= 10);
+A('apap5', '🌡️', '解熱剤の えらび方', 'インフルエンザや 水ぼうそうの時に アセトアミノフェンを 5回 えらぶ', () => (S.stat.apapOk || 0) >= 5);
 A('shop10', '🏪', 'お買いもの', 'ショップで 10回 買う', () => (S.stat.buy || 0) >= 10);
 function checkAch() {
   for (const a of ACH) if (!S.ach[a.id] && a.test()) { S.ach[a.id] = Date.now(); S.newAch = (S.newAch || 0) + 1; SE.play('star'); toast(`🏅 じっせき「${a.ja}」`); }
@@ -1261,6 +1264,16 @@ async function useDrug(id) {
   B.ap -= d.cost; B.usedTurn.add(id); if (d.cd) B.cd[id] = d.cd + 1; B.sel = null;
   S.used[id] = (S.used[id] || 0) + 1;
   const lv = R.lv[id] || 1;
+  // インフルエンザ・水ぼうそうの時の 解熱剤の えらび方(NSAIDsは さける・アセトアミノフェンが よい)
+  const viral = B.foes.some(x => x.hp > 0 && ['flu', 'flu_boss', 'vzv'].includes(x.pid));
+  const kid = !R.stage || SG(R).patient === 'kid';
+  if (viral && d.nsaid) {
+    const pen = kid ? (d.nsaid >= 2 ? 6 : 4) : 2; R.hp -= pen; B.wrong++; R.wrong++; st('nsaidNg');
+    SE.play('ng'); floatTxt('❤️-' + pen, null, 'bad');
+    toast(kid ? `⚠️ インフルエンザ・水ぼうそうの 子どもに ${d.ja}(NSAIDs)は ✕。脳症などが 重くなる おそれ。アセトアミノフェンを 使おう` : `⚠️ インフルエンザ・水ぼうそうの時は NSAIDsを さけて、アセトアミノフェンを 使うのが 安全`, 4200);
+    if (kid) { renderBattle(); return afterAction(); }
+  }
+  if (viral && d.id === 'apap') { R.hp = Math.min(R.max, R.hp + 2); st('apapOk'); toast('◎ インフルエンザ・水ぼうそうの 熱には アセトアミノフェン。正解!', 2400); }
   if (d.heal || d.guard || d.gutUp || d.immUp) {
     if (d.heal) { R.hp = Math.min(R.max, R.hp + d.heal + (lv - 1) * 2); floatTxt('❤️+' + (d.heal + (lv - 1) * 2), null, 'heal'); }
     if (d.guard) B.guard += d.guard;
@@ -1477,7 +1490,7 @@ async function lose() {
 function rewardPool(R) {
   const sg = SG(R);
   const want = new Set(); [...sg.enemies, ...sg.elites, ...sg.boss].forEach(pid => DRUGS.forEach(d => { if (effOf(d, P[pid])) want.add(d.id); }));
-  ['apap', 'ors', 'drip', 'loxo', 'pred', 'bif', 'o2', 'nutri', 'sleep'].forEach(x => want.add(x));
+  ['apap', 'ors', 'drip', 'loxo', 'dclf', 'pred', 'bif', 'o2', 'nutri', 'sleep'].forEach(x => want.add(x));
   if (R.stage === 9) DRUGS.filter(d => d.endless).forEach(d => want.add(d.id));
   return [...want].filter(id => !learned(id));
 }

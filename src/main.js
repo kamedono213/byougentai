@@ -78,6 +78,7 @@ A('e10', '👑', '伝説の 名医', 'むげん病院で 10幕 クリア', () =>
 A('scn', '🗺️', 'どこでも 名医', 'むげん病院の 派遣先を ぜんぶ クリア', () => SCN.every(s => S.endless.scn && S.endless.scn[s.id]));
 A('best30', '✨', 'ばっちり 名医', 'こうか ばつぐんを 30回 出す(相手に ぴったりの 薬)', () => (S.stat.best || 0) >= 30);
 A('mitate10', '🩺', '見立て名人', '問診だけで 当たりを つけて 治療し、10回 正体を 当てる', () => (S.stat.mitate || 0) >= 10);
+A('apap5', '🌡️', '解熱剤の えらび方', 'インフルエンザや 水ぼうそうの時に アセトアミノフェンを 5回 えらぶ', () => (S.stat.apapOk || 0) >= 5);
 A('shop10', '🏪', 'お買いもの', 'ショップで 10回 買う', () => (S.stat.buy || 0) >= 10);
 function checkAch() {
   for (const a of ACH) if (!S.ach[a.id] && a.test()) { S.ach[a.id] = Date.now(); S.newAch = (S.newAch || 0) + 1; SE.play('star'); toast(`🏅 じっせき「${a.ja}」`); }
@@ -424,6 +425,16 @@ async function useDrug(id) {
   B.ap -= d.cost; B.usedTurn.add(id); if (d.cd) B.cd[id] = d.cd + 1; B.sel = null;
   S.used[id] = (S.used[id] || 0) + 1;
   const lv = R.lv[id] || 1;
+  // インフルエンザ・水ぼうそうの時の 解熱剤の えらび方(NSAIDsは さける・アセトアミノフェンが よい)
+  const viral = B.foes.some(x => x.hp > 0 && ['flu', 'flu_boss', 'vzv'].includes(x.pid));
+  const kid = !R.stage || SG(R).patient === 'kid';
+  if (viral && d.nsaid) {
+    const pen = kid ? (d.nsaid >= 2 ? 6 : 4) : 2; R.hp -= pen; B.wrong++; R.wrong++; st('nsaidNg');
+    SE.play('ng'); floatTxt('❤️-' + pen, null, 'bad');
+    toast(kid ? `⚠️ インフルエンザ・水ぼうそうの 子どもに ${d.ja}(NSAIDs)は ✕。脳症などが 重くなる おそれ。アセトアミノフェンを 使おう` : `⚠️ インフルエンザ・水ぼうそうの時は NSAIDsを さけて、アセトアミノフェンを 使うのが 安全`, 4200);
+    if (kid) { renderBattle(); return afterAction(); }
+  }
+  if (viral && d.id === 'apap') { R.hp = Math.min(R.max, R.hp + 2); st('apapOk'); toast('◎ インフルエンザ・水ぼうそうの 熱には アセトアミノフェン。正解!', 2400); }
   if (d.heal || d.guard || d.gutUp || d.immUp) {
     if (d.heal) { R.hp = Math.min(R.max, R.hp + d.heal + (lv - 1) * 2); floatTxt('❤️+' + (d.heal + (lv - 1) * 2), null, 'heal'); }
     if (d.guard) B.guard += d.guard;
@@ -640,7 +651,7 @@ async function lose() {
 function rewardPool(R) {
   const sg = SG(R);
   const want = new Set(); [...sg.enemies, ...sg.elites, ...sg.boss].forEach(pid => DRUGS.forEach(d => { if (effOf(d, P[pid])) want.add(d.id); }));
-  ['apap', 'ors', 'drip', 'loxo', 'pred', 'bif', 'o2', 'nutri', 'sleep'].forEach(x => want.add(x));
+  ['apap', 'ors', 'drip', 'loxo', 'dclf', 'pred', 'bif', 'o2', 'nutri', 'sleep'].forEach(x => want.add(x));
   if (R.stage === 9) DRUGS.filter(d => d.endless).forEach(d => want.add(d.id));
   return [...want].filter(id => !learned(id));
 }
