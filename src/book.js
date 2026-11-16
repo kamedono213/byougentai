@@ -15,7 +15,20 @@ const COLUMNS = [
   { t: 'ワクチンと 手洗い', b: 'いちばん よい 治療は、かからないこと。インフルエンザ・肺炎球菌・麻しん・百日咳・B型肝炎などは ワクチンで 予防できる。石けんで 30秒の 手洗いも 多くの 感染症を ふせぐ。' },
 ];
 const BOOK = (() => {
-  let pages = null, idx = 0, el = null;
+  let pages = null, idx = 0, el = null, hist = [];
+  let actx = null;
+  function flip() {
+    if (SE.muted) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t = actx.currentTime, len = 0.28, buf = actx.createBuffer(1, actx.sampleRate * len, actx.sampleRate), d = buf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) { const x = i / d.length; d[i] = (Math.random() * 2 - 1) * Math.pow(1 - x, 2) * (x < 0.08 ? x / 0.08 : 1); }
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const bp = actx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.8; bp.frequency.setValueAtTime(900, t); bp.frequency.exponentialRampToValueAtTime(3500, t + len);
+      const g = actx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.5, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+      src.connect(bp); bp.connect(g); g.connect(actx.destination); src.start(t); src.stop(t + len);
+    } catch (e) { /* 音が出せなくても読める */ }
+  }
   const kana = s => String(s || '').normalize('NFKC').toLowerCase().replace(/[ァ-ヶ]/g, c => String.fromCharCode(c.charCodeAt(0) - 0x60));
   const gi = d => GI[d.cat] || '';
   const where = p => { const st = STAGES.filter(s => [...s.enemies, ...s.elites, ...s.boss].includes(p.id)).map(s => s.ja.split(' ')[0]); const sc = SCN.filter(s => [...s.pool, ...s.elites, ...s.boss].includes(p.id)).map(s => s.em + s.ja); return [...st, ...sc].join('・') || (p.base ? 'ステージ1 ボス' : 'イベントなど'); };
@@ -74,32 +87,56 @@ const BOOK = (() => {
   const chapters = () => { const m = []; pages.forEach((p, i) => { const last = m[m.length - 1]; if (!last || last.ch !== p.ch) m.push({ ch: p.ch, i, items: [] }); m[m.length - 1].items.push({ t: p.title, i }); }); return m; };
   function frame(inner) {
     if (!el) { el = document.createElement('div'); el.id = 'book'; document.body.appendChild(el); }
-    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkx">✕ とじる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
+    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkx">✕ とじる</button><button class="btn sm" id="bkb" ${hist.length ? '' : 'disabled'}>↩ もどる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
     el.querySelector('#bkx').onclick = () => { SE.play('select'); el.remove(); el = null; };
-    el.querySelector('#bkt').onclick = () => { SE.play('select'); toc(); };
+    el.querySelector('#bkt').onclick = () => { SE.play('select'); jumpFrom(); toc(); };
+    el.querySelector('#bkb').onclick = () => { if (!hist.length) return; const h = hist.pop(); if (h === 'toc') return toc(); if (h && h.q) { inList = true; return search(h.q); } flip(); show(h, 'r'); };
     const q = el.querySelector('#bkq'); q.onkeydown = e => { if (e.key === 'Enter' && !e.isComposing) search(q.value); }; q.onchange = () => search(q.value);
   }
+  let inList = false; // 目次・検索の画面にいる時
+  function jumpFrom() { hist.push(inList ? 'toc' : idx); if (hist.length > 50) hist.shift(); }
   function show(i, dir) {
+    inList = false;
     idx = clamp(i, 0, pages.length - 1); const p = pages[idx];
     frame(`<div class="bpage ${dir ? 'turn' + dir : ''}"><span class="bch">${p.ch}</span><h3>${p.title}</h3>${p.html}</div><div class="bnav"><button class="btn" id="bkp" ${idx ? '' : 'disabled'}>←</button><span>${idx + 1} / ${pages.length}</span><button class="btn main" id="bkn" ${idx < pages.length - 1 ? '' : 'disabled'}>→</button></div>`);
-    el.querySelector('#bkp').onclick = () => { SE.play('select'); show(idx - 1, 'r'); };
-    el.querySelector('#bkn').onclick = () => { SE.play('select'); show(idx + 1, 'l'); };
-    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; const j = pages.findIndex(x => x.title === k); if (j >= 0) { SE.play('select'); show(j, 'l'); } });
+    el.querySelector('#bkp').onclick = () => { flip(); show(idx - 1, 'r'); };
+    el.querySelector('#bkn').onclick = () => { flip(); show(idx + 1, 'l'); };
+    el.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const k = b.dataset.k; const j = pages.findIndex(x => x.title === k); if (j >= 0) { jumpFrom(); flip(); show(j, 'l'); } });
     const pg = el.querySelector('.bpage'); let x0 = null;
     pg.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-    pg.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { if (dx < 0 && idx < pages.length - 1) show(idx + 1, 'l'); else if (dx > 0 && idx) show(idx - 1, 'r'); } });
+    pg.addEventListener('touchend', e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 60) { if (dx < 0 && idx < pages.length - 1) { flip(); show(idx + 1, 'l'); } else if (dx > 0 && idx) { flip(); show(idx - 1, 'r'); } } });
   }
   function toc() {
+    inList = true;
     frame(`<div class="bpage"><h3>📑 目次</h3>${chapters().map(c => `<details ${c.ch === pages[idx].ch ? 'open' : ''}><summary><b>${c.ch}</b> <span class="note">p.${c.i + 1}〜</span></summary><div class="blist">${c.items.map(it => `<button class="bjump" data-i="${it.i}">${it.t}<span class="note">p.${it.i + 1}</span></button>`).join('')}</div></details>`).join('')}</div>`);
-    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { SE.play('select'); show(+b.dataset.i, 'l'); });
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { hist.push('toc'); flip(); show(+b.dataset.i, 'l'); });
   }
   function search(q) {
+    if (!inList) jumpFrom();
+    inList = true;
     const k = kana(q).trim(); if (!k) return;
     const words = k.split(/\s+/);
     const hit = pages.filter(p => words.every(w => p.key.includes(w)));
     frame(`<div class="bpage"><h3>🔍「${esc(q)}」 ${hit.length}件</h3><div class="blist">${hit.map(p => `<button class="bjump" data-i="${p.n - 1}">${p.title}<span class="note">${p.ch} ・ p.${p.n}</span></button>`).join('') || '<p class="note">見つからなかった</p>'}</div></div>`);
     el.querySelector('#bkq').value = q;
-    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { SE.play('select'); show(+b.dataset.i, 'l'); });
+    el.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { const q2 = q; hist.push({ q: q2 }); flip(); show(+b.dataset.i, 'l'); });
   }
-  return { open(key) { if (!pages) build(); SE.play('select'); const j = key ? pages.findIndex(p => p.title === key) : -1; show(j >= 0 ? j : idx); } };
+  return { open(key) { if (!pages) build(); SE.play('select'); const j = key ? pages.findIndex(p => p.title === key) : -1; flip(); show(j >= 0 ? j : idx); } };
+})();
+
+// ---------- ふりがなが 漢字より 長い時、漢字の間を 広げて となりと 重ならないようにする
+(() => {
+  const fix = root => {
+    if (!document.documentElement.classList.contains('furi')) return;
+    (root.querySelectorAll ? root : document).querySelectorAll('.rb:not([data-fx])').forEach(e => {
+      e.setAttribute('data-fx', '1');
+      const rt = e.getAttribute('data-rt') || ''; const base = e.textContent.length; if (!rt || !base) return;
+      const fs = parseFloat(getComputedStyle(e).fontSize) || 14;
+      const rtW = rt.length * Math.max(fs * 0.5, 7.5) * 1.02, w = e.getBoundingClientRect().width;
+      if (rtW > w + 1) { const add = (rtW - w) / base; e.style.setProperty('letter-spacing', add.toFixed(1) + 'px', 'important'); e.style.setProperty('padding-right', '0', 'important'); }
+    });
+  };
+  new MutationObserver(ms => { for (const m of ms) for (const n of m.addedNodes) if (n.nodeType === 1) fix(n); }).observe(document.body, { childList: true, subtree: true });
+  document.addEventListener('click', e => { if (e.target.closest && e.target.closest('.furi-toggle')) setTimeout(() => { document.querySelectorAll('.rb[data-fx]').forEach(x => { x.removeAttribute('data-fx'); x.style.removeProperty('letter-spacing'); }); fix(document); }, 50); });
+  setTimeout(() => fix(document), 300);
 })();

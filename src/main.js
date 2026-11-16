@@ -131,13 +131,13 @@ function title() {
     ${S.tut < 99 ? `<button class="btn main big" id="tut">🎓 けんしゅうを はじめる</button>` : `<button class="btn ${S.run ? '' : 'main'} big" id="play">🏥 ステージを えらぶ</button>`}
     ${S.clear[3] ? `<button class="btn big endless" id="endless">♾️ むげん病院${S.endless && S.endless.best ? ` <span class="note">さいこう ${S.endless.best}幕</span>` : ''}</button>` : S.tut >= 99 ? '<p class="note c">🔒 ステージ3まで クリアすると「♾️ むげん病院」が 解放</p>' : ''}
     ${S.tut >= 99 ? `<button class="btn ${S.tut2 >= 99 ? '' : 'main'}" id="tut2">🔬 検査けんしゅう${S.tut2 >= 99 ? ' ✓' : '(グラム染色など)'}</button>` : ''}
-    <div class="grid2"><button class="btn" id="zukan">📚 図鑑</button><button class="btn" id="ach">🏅 じっせき${S.newAch ? ` <i class="dot">${S.newAch}</i>` : ''}</button><button class="btn" id="man">📖 せつめいしょ</button><button class="btn" id="book">📕 攻略本</button><button class="btn" id="look">👩‍⚕️ 見た目</button></div>
+    <div class="grid2"><button class="btn" id="zukan">📚 図鑑</button><button class="btn" id="ach">🏅 じっせき${S.newAch ? ` <i class="dot">${S.newAch}</i>` : ''}</button><button class="btn" id="man">📖 せつめいしょ</button><button class="btn" id="bookbtn">📕 攻略本</button><button class="btn" id="look">👩‍⚕️ 見た目</button></div>
     ${S.tut < 99 && S.tut > 0 ? '<button class="btn" id="tutr">🎓 けんしゅうを はじめから</button>' : ''}
     <p class="note c"><a href="#" id="keep">${S.id ? '☁️ ID「' + esc(S.id) + '」で ほぞん中' : '💾 きろくを ネットにも ほぞんする'}</a> ・ <a href="#" id="upd">🔄 さいしんに こうしん</a> ・ <span data-furi-slot></span></p>
     <p class="note c tiny">ゲームの中の話です。本当の治療は お医者さんが 決めます。</p></div>`, 'titleScr');
   const on = (id, f) => { const e = $('#' + id); if (e) e.onclick = ev => { ev.preventDefault(); SE.play('select'); f(); }; };
   on('cont', resumeRun); on('tut2', () => lessons(S.tut2 >= 99 ? 0 : S.tut2 || 0)); on('endless', endlessStart); on('tut', () => tutorial(S.tut || 0)); on('tutr', () => tutorial(0)); on('play', stageSelect);
-  on('zukan', () => zukan('p')); on('ach', achScreen); on('man', manualAll); on('look', lookScreen); on('book', () => BOOK.open()); on('keep', keepScreen); on('upd', appUpdate);
+  on('zukan', () => zukan('p')); on('ach', achScreen); on('man', manualAll); on('look', lookScreen); on('bookbtn', () => BOOK.open()); on('keep', keepScreen); on('upd', appUpdate);
 }
 function lookScreen() {
   screen(`${topBar('お医者さんの 見た目', title)}<div class="looks">${ART.LOOKS.map(L => { const ok = !L.need || S.ach[L.need]; return `<button class="look ${S.look === L.id ? 'on' : ''}" data-l="${L.id}" ${ok ? '' : 'disabled'}>${ART.doctor(L.id, 70)}<b>${ok ? L.ja : '🔒'}</b>${ok ? '' : `<span class="note">${ACH.find(a => a.id === L.need).ja}で 解放</span>`}</button>`; }).join('')}</div>`);
@@ -230,7 +230,7 @@ function statusBar(R) {
     <div class="sb gut" title="善玉菌"><span>🥛</span><div class="bar"><i style="width:${gutPct}%"></i></div><b>${R.gut}</b></div>
     <div class="sb res" title="耐性メーター"><span>⚠️</span><div class="bar"><i style="width:${resPct}%"></i></div><b>${R.resist}</b></div>
     <div class="sb coin">🪙${R.coins}</div></div>
-    <div class="relics"><span class="relic" id="bk">📕</span>${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
+    <div class="relics"><span class="relic bkbtn" id="bk">📕攻略本</span>${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
 }
 const RL = id => RM[id];
 function bindStatus(inBattle) {
