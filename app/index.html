@@ -160,8 +160,8 @@ a { color: var(--mute); }
 .bktop { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; } .bktop .txt { flex: 1 1 100%; min-width: 0; padding: 6px 10px; }
 .bpage { min-height: 0; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; background: #f7f2e6; color: #2a2a2a; border-radius: 8px 16px 16px 8px; padding: 12px 14px; overflow-y: auto; box-shadow: inset 12px 0 16px -10px rgba(0,0,0,.35), 0 6px 18px rgba(0,0,0,.4); border-left: 6px solid #b08960; position: relative; }
 .bpage h3 { margin: 4px 0 8px; color: #b3471a; } .bpage .note { color: #6b6b6b; } .bpage p { margin: 6px 0; font-size: 14px; }
-.bpage.turnl { animation: turnl .65s cubic-bezier(.2,.7,.3,1); transform-origin: left center; } .bpage.turnr { animation: turnr .65s cubic-bezier(.2,.7,.3,1); transform-origin: left center; }
-@keyframes turnl { 0% { transform: perspective(1200px) rotateY(-80deg); filter: brightness(.6); } 60% { filter: brightness(.95); } 100% { transform: perspective(1200px) rotateY(0); } } @keyframes turnr { 0% { transform: perspective(1200px) rotateY(60deg) translateX(20px); opacity: .4; filter: brightness(.7); } 100% { transform: none; opacity: 1; } }
+
+
 .bch { position: absolute; right: 10px; top: 6px; font-size: 11px; color: #a07a4a; font-weight: 800; }
 .bnav { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; color: #fff; }
 .bhead { display: flex; gap: 10px; align-items: center; } .bhead > div { display: grid; gap: 3px; justify-items: start; }
