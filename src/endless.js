@@ -131,7 +131,8 @@ function endlessStart() {
     const extra = shuffle(DRUGS.filter(d => !d.endless && d.cost === 1 && !R.deck.includes(d.id) && (d.cat !== 'sup' || CARE_FOR[d.id]))).slice(0, mlv('study'));
     extra.forEach(d => { R.deck.push(d.id); learn(d.id, true); });
     S.run = R; save(); SE.play('start');
-    if (S.endless.runs === 1) await modal('<b class="big">💡 むげん病院の チップス</b><div class="tips"><div>❓ 病原体は <b>正体が わからない</b> 状態で 出てくる。最初は 大まかな 症状だけ。<b>🗣️問診</b>や 検査で しぼりこもう</div><div>💊 薬は 毎回 <b>5つ</b>から スタート。ごほうびや <b>💊薬局</b>で ふやす</div><div>📞 合う薬が ない時は 検査の 中の <b>専門医に 相談</b>。病原体と 薬を 当てたら その薬が もらえる</div><div>💪 負けても <b>けんこうポイント</b>が たまる。<b>からだづくり</b>で 体を きたえると 次から 有利</div></div>', ['わかった!']);
+    if (S.endless.runs === 1) await modal('<b class="big">💡 むげん病院の チップス</b><div class="tips"><div>❓ 病原体は <b>正体が わからない</b> 状態で 出てくる。最初は 大まかな 症状だけ。<b>🗣️問診</b>や 検査で しぼりこもう</div><div>💊 薬は 毎回 <b>5つ</b>から スタート。ごほうびや <b>💊薬局</b>で ふやす</div><div>📞 合う薬が ない時は 検査の 中の <b>専門医に 相談</b>。病原体と 薬を 当てたら その薬が もらえる</div><div>💪 負けても <b>けんこうポイント</b>が たまる。<b>からだづくり</b>で 体を きたえると 次から 有利</div><div>🚫 患者さんには <b>アレルギーなどの 条件</b>が ある。📊 病院ごとに <b>耐性表</b>が ちがう</div></div>', ['わかった!']);
+    await readGuide('<b class="big">📕 攻略本で 読んでおこう</b>', [['患者さんの 条件(アレルギー・子ども・お年より)', '患者さんの 条件'], ['耐性表(アンチバイオグラム)の 見方', '耐性表の 見方'], ['お医者さんの 考え方(臨床推論)', 'お医者さんの 考え方']]);
     chooseScenario();
   });
 }
@@ -141,7 +142,7 @@ async function chooseScenario() {
   const three = shuffle(open).slice(0, 3);
   const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
-  if (R.act === 2 || R.act === 3) await modal(R.act === 2 ? '<b class="big">⚠️ 2幕から むずかしくなる</b><div class="tips"><div>🩸 血液検査は <b>数字だけ</b>。基準の はんいと くらべて 自分で 読もう</div><div>🧪 迅速検査は 病気の <b>はじめは 陰性に なりやすい</b></div><div>🧫 培養は 結果が <b>次の日</b>。待つ間は どうする?</div><div>⚔️ 敵が ふえる・強くなる。幕の あいだで 全回復しない</div></div>' : '<b class="big">⚠️ 3幕から もっと むずかしい</b><div class="tips"><div>🩸 検査値に <b>基準の はんいが 出ない</b>。ふつうの 値を おぼえておこう</div><div>❓ 見た目の 症状は <b>1つだけ</b>。問診が 大事</div><div>📞 専門医への 相談は <b>2ポイント</b></div><div>⚔️ 敵が 3体 出ることも</div></div>', ['わかった']);
+  if (R.act === 2 || R.act === 3) await readGuide(R.act === 2 ? '<b class="big">⚠️ 2幕から むずかしくなる</b><div class="tips"><div>🩸 血液検査は <b>数字だけ</b>。基準の はんいと くらべて 自分で 読もう</div><div>🧪 迅速検査は 病気の <b>はじめは 陰性に なりやすい</b></div><div>🧫 培養は 結果が <b>次の日</b>。待つ間は どうする?</div><div>⚔️ 敵が ふえる・強くなる。幕の あいだで 全回復しない</div></div>' : '<b class="big">⚠️ 3幕から もっと むずかしい</b><div class="tips"><div>🩸 検査値に <b>基準の はんいが 出ない</b>。ふつうの 値を おぼえておこう</div><div>❓ 見た目の 症状は <b>1つだけ</b>。問診が 大事</div><div>📞 専門医への 相談は <b>2ポイント</b></div><div>⚔️ 敵が 3体 出ることも</div></div>', R.act === 2 ? [['血液検査の 数字の 読み方', '血液検査の 数字の 読み方'], ['迅速検査の 落とし穴', '迅速検査の 落とし穴'], ['培養を 待つ間は どうする?(エンピリック治療)', '培養を 待つ間は どうする?']] : [['血液検査の 数字の 読み方', 'ふつうの 値(基準値)'], ['お医者さんの 考え方(臨床推論)', 'お医者さんの 考え方']]);
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
   R.cond = rollConds(R, s.patient); R.condKnown = false;
   const pt = PATIENTS[s.patient]; const keepHp = R.act > 1 ? R.hp / (R.max || 1) : 1;
@@ -293,4 +294,13 @@ function hardExam(kind, p, f, r) {
   if (kind === 'rapid' && r.k === 3 && p.cat === 'vir' && B.turn <= 1 && Math.random() < 0.35) { r.lines = ['陰性……?(発症の すぐあとは ウイルスが 少なくて 陰性に なりやすい)']; r.k = 0; f.info.rapid = 0; st('falseNeg'); }
   // 培養: 結果は 次の日
   if (kind === 'culture' && !f.cultAt) { f.cultAt = B.turn + 1; r.lines = ['検体を 出した。結果は 次の日(培養は 菌が 育つのを 待つ)。', 'それまでは 見立てで 治療しよう(エンピリック治療)']; r.k = 0; r.wait = true; f.info.culture = 0; }
+}
+
+// 新しい 要素が 出る前に「攻略本の ここを 読もう」(読み終わったら この 案内に もどる)
+async function readGuide(head, list) {
+  for (;;) {
+    const i = await modal(head + '<p class="note">📕 はじめる前に、攻略本の ここを 読んでおこう(読んだら この 画面に もどる)</p>', list.map(x => '📕 ' + x[1]).concat(['わかった! はじめる']));
+    if (i >= list.length || i < 0) return;
+    await new Promise(res => { BOOK.open('📝 ' + list[i][0], false); const iv = setInterval(() => { if (!document.getElementById('book')) { clearInterval(iv); res(); } }, 250); });
+  }
 }

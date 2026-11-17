@@ -676,7 +676,8 @@ function endlessStart() {
     const extra = shuffle(DRUGS.filter(d => !d.endless && d.cost === 1 && !R.deck.includes(d.id) && (d.cat !== 'sup' || CARE_FOR[d.id]))).slice(0, mlv('study'));
     extra.forEach(d => { R.deck.push(d.id); learn(d.id, true); });
     S.run = R; save(); SE.play('start');
-    if (S.endless.runs === 1) await modal('<b class="big">💡 むげん病院の チップス</b><div class="tips"><div>❓ 病原体は <b>正体が わからない</b> 状態で 出てくる。最初は 大まかな 症状だけ。<b>🗣️問診</b>や 検査で しぼりこもう</div><div>💊 薬は 毎回 <b>5つ</b>から スタート。ごほうびや <b>💊薬局</b>で ふやす</div><div>📞 合う薬が ない時は 検査の 中の <b>専門医に 相談</b>。病原体と 薬を 当てたら その薬が もらえる</div><div>💪 負けても <b>けんこうポイント</b>が たまる。<b>からだづくり</b>で 体を きたえると 次から 有利</div></div>', ['わかった!']);
+    if (S.endless.runs === 1) await modal('<b class="big">💡 むげん病院の チップス</b><div class="tips"><div>❓ 病原体は <b>正体が わからない</b> 状態で 出てくる。最初は 大まかな 症状だけ。<b>🗣️問診</b>や 検査で しぼりこもう</div><div>💊 薬は 毎回 <b>5つ</b>から スタート。ごほうびや <b>💊薬局</b>で ふやす</div><div>📞 合う薬が ない時は 検査の 中の <b>専門医に 相談</b>。病原体と 薬を 当てたら その薬が もらえる</div><div>💪 負けても <b>けんこうポイント</b>が たまる。<b>からだづくり</b>で 体を きたえると 次から 有利</div><div>🚫 患者さんには <b>アレルギーなどの 条件</b>が ある。📊 病院ごとに <b>耐性表</b>が ちがう</div></div>', ['わかった!']);
+    await readGuide('<b class="big">📕 攻略本で 読んでおこう</b>', [['患者さんの 条件(アレルギー・子ども・お年より)', '患者さんの 条件'], ['耐性表(アンチバイオグラム)の 見方', '耐性表の 見方'], ['お医者さんの 考え方(臨床推論)', 'お医者さんの 考え方']]);
     chooseScenario();
   });
 }
@@ -686,7 +687,7 @@ async function chooseScenario() {
   const three = shuffle(open).slice(0, 3);
   const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
-  if (R.act === 2 || R.act === 3) await modal(R.act === 2 ? '<b class="big">⚠️ 2幕から むずかしくなる</b><div class="tips"><div>🩸 血液検査は <b>数字だけ</b>。基準の はんいと くらべて 自分で 読もう</div><div>🧪 迅速検査は 病気の <b>はじめは 陰性に なりやすい</b></div><div>🧫 培養は 結果が <b>次の日</b>。待つ間は どうする?</div><div>⚔️ 敵が ふえる・強くなる。幕の あいだで 全回復しない</div></div>' : '<b class="big">⚠️ 3幕から もっと むずかしい</b><div class="tips"><div>🩸 検査値に <b>基準の はんいが 出ない</b>。ふつうの 値を おぼえておこう</div><div>❓ 見た目の 症状は <b>1つだけ</b>。問診が 大事</div><div>📞 専門医への 相談は <b>2ポイント</b></div><div>⚔️ 敵が 3体 出ることも</div></div>', ['わかった']);
+  if (R.act === 2 || R.act === 3) await readGuide(R.act === 2 ? '<b class="big">⚠️ 2幕から むずかしくなる</b><div class="tips"><div>🩸 血液検査は <b>数字だけ</b>。基準の はんいと くらべて 自分で 読もう</div><div>🧪 迅速検査は 病気の <b>はじめは 陰性に なりやすい</b></div><div>🧫 培養は 結果が <b>次の日</b>。待つ間は どうする?</div><div>⚔️ 敵が ふえる・強くなる。幕の あいだで 全回復しない</div></div>' : '<b class="big">⚠️ 3幕から もっと むずかしい</b><div class="tips"><div>🩸 検査値に <b>基準の はんいが 出ない</b>。ふつうの 値を おぼえておこう</div><div>❓ 見た目の 症状は <b>1つだけ</b>。問診が 大事</div><div>📞 専門医への 相談は <b>2ポイント</b></div><div>⚔️ 敵が 3体 出ることも</div></div>', R.act === 2 ? [['血液検査の 数字の 読み方', '血液検査の 数字の 読み方'], ['迅速検査の 落とし穴', '迅速検査の 落とし穴'], ['培養を 待つ間は どうする?(エンピリック治療)', '培養を 待つ間は どうする?']] : [['血液検査の 数字の 読み方', 'ふつうの 値(基準値)'], ['お医者さんの 考え方(臨床推論)', 'お医者さんの 考え方']]);
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
   R.cond = rollConds(R, s.patient); R.condKnown = false;
   const pt = PATIENTS[s.patient]; const keepHp = R.act > 1 ? R.hp / (R.max || 1) : 1;
@@ -838,6 +839,15 @@ function hardExam(kind, p, f, r) {
   if (kind === 'rapid' && r.k === 3 && p.cat === 'vir' && B.turn <= 1 && Math.random() < 0.35) { r.lines = ['陰性……?(発症の すぐあとは ウイルスが 少なくて 陰性に なりやすい)']; r.k = 0; f.info.rapid = 0; st('falseNeg'); }
   // 培養: 結果は 次の日
   if (kind === 'culture' && !f.cultAt) { f.cultAt = B.turn + 1; r.lines = ['検体を 出した。結果は 次の日(培養は 菌が 育つのを 待つ)。', 'それまでは 見立てで 治療しよう(エンピリック治療)']; r.k = 0; r.wait = true; f.info.culture = 0; }
+}
+
+// 新しい 要素が 出る前に「攻略本の ここを 読もう」(読み終わったら この 案内に もどる)
+async function readGuide(head, list) {
+  for (;;) {
+    const i = await modal(head + '<p class="note">📕 はじめる前に、攻略本の ここを 読んでおこう(読んだら この 画面に もどる)</p>', list.map(x => '📕 ' + x[1]).concat(['わかった! はじめる']));
+    if (i >= list.length || i < 0) return;
+    await new Promise(res => { BOOK.open('📝 ' + list[i][0], false); const iv = setInterval(() => { if (!document.getElementById('book')) { clearInterval(iv); res(); } }, 250); });
+  }
 }
 
 // ---------- 診断のための 情報(問診で わかること・迅速検査・第一選択の薬)
@@ -1617,7 +1627,7 @@ function statusBar(R, split) {
     ${split ? '' : relicsRow(R)}`;
 }
 function relicsRow(R, noBook) {
-  return `<div class="relics">${noBook ? '' : '<span class="relic bkbtn" id="bk">📕攻略本</span>'}${R.abg ? '<span class="relic" data-abg="1">📊</span>' : ''}${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
+  return `<div class="relics">${noBook ? '' : '<span class="relic bkbtn" id="bk">📕攻略本</span>'}${R.abg ? '<span class="relic abgbtn" data-abg="1">📊<small>耐性表</small></span>' : ''}${R.relics.map(r => `<span class="relic" data-r="${r}">${RL(r).em}</span>`).join('')}${R.items.map((it, i) => `<span class="item" data-it="${i}">${IT[it].em}</span>`).join('')}</div>`;
 }
 const RL = id => RM[id];
 function bindStatus(inBattle) {
@@ -2656,10 +2666,12 @@ function titleBG() {
 
 // ---------- 攻略本(ゲームの中で 読める。最初から ぜんぶ のっている。ページを めくる・目次・検索)
 const COLUMNS = [
+  { t: 'お医者さんの 考え方(臨床推論)', b: '病気の 原因を さがす時は、①どこの 感染か(のど・肺・おしっこ…)、②どんな 人か(子ども・お年より・旅行帰り・入院中)、③そこで よくある 原因は 何か、を 順に 考える。そして ④いちばん 合う 薬(第一選択)で 治療を 始め、⑤検査で 確かめて しぼりこむ。ゲームの 問診・検査・薬えらびは、この 流れに なっている。' },
+  { t: '患者さんの 条件(アレルギー・子ども・お年より)', b: '<b>ペニシリン系に アレルギー</b>が ある人に 使うと、じんましんや 息苦しさ(アナフィラキシー)が おきる。<b>問診で 先に 聞く</b>。<b>小さい子</b>には テトラサイクリン系(歯の 色が かわる)・キノロン系(関節)は ふつう 使わない。<b>腎臓が 弱い人</b>では アミノグリコシド系や バンコマイシンを さけるか 量を へらす。<b>お年より</b>は NSAIDs(ロキソプロフェン・ジクロフェナク)で 胃や 腎臓を いためやすいので、熱や いたみには アセトアミノフェン。' },
+  { t: '耐性表(アンチバイオグラム)の 見方', b: '病院ごとに「この 菌の 何%に この 薬が 効かないか」を まとめた 表。<b>同じ 菌でも、病院や 地域で 効く 薬が ちがう</b>。いつもの 第一選択が 効かない 割合が 高い 病院では、別の 薬を えらんだり、🧫培養で 感受性を 確かめてから 薬を しぼる。' },
   { t: '血液検査の 数字の 読み方', b: '<b>白血球</b>(ふつう 3,300〜8,600)が 多く、<b>好中球</b>(ふつう 40〜70%)の 割合が 高く、<b>CRP</b>(ふつう 0.3以下)が 高い → 細菌っぽい。白血球が ふつう〜少なめで <b>リンパ球</b>(ふつう 20〜45%)が 多く、CRPが 少し 高いだけ → ウイルスっぽい。<b>好酸球</b>(ふつう 1〜6%)が 多い → 寄生虫や アレルギー。<b>β-Dグルカン</b>(ふつう 11未満)が 高い → カビ(深在性真菌症)。<b>血小板</b>(ふつう 15万〜35万)が 少ない → デング熱・マラリアなど。<b>プロカルシトニン</b>(ふつう 0.5未満)が 高い → 重い 細菌感染。数字は 1つだけで 決めず、症状や ほかの 検査と 合わせて 考える。' },
   { t: '迅速検査の 落とし穴', b: 'インフルエンザなどの 迅速検査は、<b>熱が 出て すぐ(12時間 以内)は ウイルスが 少なくて 陰性に なりやすい</b>(にせの 陰性)。陰性でも、学校で 流行中・急な 高熱など 話が ぴったりなら その病気と 考えて 治療を 始めることが ある。時間を おいて 検査を やり直すことも。' },
   { t: '培養を 待つ間は どうする?(エンピリック治療)', b: '培養は 菌が 育つのを 待つので、<b>結果まで 1〜3日</b> かかる。重い 患者さんは 待てないので、<b>「たぶん この菌」と 見立てて 先に 薬を 始める</b>(エンピリック治療)。結果が 出たら、効く 薬に しぼりこむ(デエスカレーション)。' },
-  { t: 'お医者さんの 考え方(臨床推論)', b: '病気の 原因を さがす時は、①どこの 感染か(のど・肺・おしっこ…)、②どんな 人か(子ども・お年より・旅行帰り・入院中)、③そこで よくある 原因は 何か、を 順に 考える。そして ④いちばん 合う 薬(第一選択)で 治療を 始め、⑤検査で 確かめて しぼりこむ。ゲームの 問診・検査・薬えらびは、この 流れに なっている。' },
   { t: 'グラム染色の 読み方', b: '細菌を 色で 2つに 分ける 検査。<b style="color:#6a3fb5">紫(陽性)</b>は 細胞壁が 厚い菌、<b style="color:#e05a7a">赤(陰性)</b>は 外側に うすい膜が ある菌。形も 大事で、紫の ブドウの房なら ブドウ球菌、紫の くさりなら レンサ球菌、紫の 2つ組なら 肺炎球菌、赤い 棒なら 大腸菌などの 腸内細菌。数分で わかるので、治療の 最初の 手がかりになる。' },
   { t: 'かぜに 抗菌薬が 効かない わけ', b: 'かぜの ほとんどは ウイルスが 原因。抗菌薬は 細菌の 細胞壁や タンパク質工場を こわす薬なので、それを もたない ウイルスには 効かない。効かないのに 飲むと、善玉菌が へったり 耐性菌が 生まれたり する。だから「かぜに 抗菌薬は いらない」が 基本。' },
   { t: '薬剤耐性(AMR)と 適正使用', b: '抗菌薬を 使うほど、生き残った 菌が 耐性を もちやすくなる。世界中で 耐性菌が ふえていて、大きな 問題に なっている。必要な時に、必要な 薬を、必要な 期間だけ 使うのが「適正使用」。ゲームの 耐性メーターは、この 考え方を 表している。' },
