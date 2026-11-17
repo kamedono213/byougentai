@@ -141,9 +141,11 @@ async function chooseScenario() {
   const three = shuffle(open).slice(0, 3);
   const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
+  if (R.act === 2 || R.act === 3) await modal(R.act === 2 ? '<b class="big">⚠️ 2幕から むずかしくなる</b><div class="tips"><div>🩸 血液検査は <b>数字だけ</b>。基準の はんいと くらべて 自分で 読もう</div><div>🧪 迅速検査は 病気の <b>はじめは 陰性に なりやすい</b></div><div>🧫 培養は 結果が <b>次の日</b>。待つ間は どうする?</div><div>⚔️ 敵が ふえる・強くなる。幕の あいだで 全回復しない</div></div>' : '<b class="big">⚠️ 3幕から もっと むずかしい</b><div class="tips"><div>🩸 検査値に <b>基準の はんいが 出ない</b>。ふつうの 値を おぼえておこう</div><div>❓ 見た目の 症状は <b>1つだけ</b>。問診が 大事</div><div>📞 専門医への 相談は <b>2ポイント</b></div><div>⚔️ 敵が 3体 出ることも</div></div>', ['わかった']);
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
   R.cond = rollConds(R, s.patient); R.condKnown = false;
-  const pt = PATIENTS[s.patient]; R.max = pt.hp + (R.act - 1) * 4 + 3 * mlv('run'); R.hp = R.max; R.gut = 10;
+  const pt = PATIENTS[s.patient]; const keepHp = R.act > 1 ? R.hp / (R.max || 1) : 1;
+  R.max = pt.hp + (R.act - 1) * 4 + 3 * mlv('run'); R.hp = R.act > 1 ? Math.min(R.max, Math.round(R.max * Math.min(1, keepHp + 0.4))) : R.max; R.gut = 10;
   R.map = makeMap(9); R.pos = null; R.path = []; R.pending = null; R.shop = null; R.evSeen = [];
   save();
   await modal(`<div class="row c">${ART.patient(pt.look, true, 90)}</div><b>${s.em} ${s.ja}</b><p>今回の 患者: ${pt.ja.replace('のどがいたい', '具合のわるい')}</p><p class="note">ボスは まだ ひみつ(🕵️ミステリーボス)。とちゅうの 🧭分かれ道で 流れが かわるよ。</p>${R.cond.filter(c => CD[c].auto).length ? `<p>${R.cond.filter(c => CD[c].auto).map(c => CD[c].em + ' <b>' + CD[c].ja + '</b>').join('・')}</p>` : ''}<p class="note">🗣️ アレルギーや 持病は 問診で 聞こう。📊 この病院の 耐性表も 見ておこう。</p>`, ['📊 耐性表を 見る', 'しゅっぱつ!']).then(async i => { if (i === 0) await abgModal(); });
@@ -252,4 +254,43 @@ function abgModal() {
   const R = S.run; if (!R || !R.abg) return;
   const rows = Object.entries(R.abg).map(([pid, x]) => '<tr><td>' + P[pid].ja + '</td><td>' + D[x.d].ja + '</td><td><b>' + x.pct + '%</b></td></tr>').join('');
   return modal('<b class="big">📊 この 病院の 耐性表</b><p class="note">この 病院では、次の 菌の 一部が その薬に 耐性(効かない)。いつもの 第一選択が 効かない ことも。🧫培養で 確かめられる。</p><table class="abg"><tr><th>菌</th><th>効かないかも</th><th>割合</th></tr>' + rows + '</table>', ['とじる']);
+}
+
+// ---- むずかしさ(むげん病院: 幕と むずかしさ設定で 上がる)
+const hard = () => { const R = S.run; return R && R.stage === 9 ? (R.act - 1) + Math.floor((R.asc || 0) / 3) : 0; };
+const rr = (a, b, step = 1) => a + Math.floor(Math.random() * ((b - a) / step + 1)) * step;
+const fmt = n => n.toLocaleString('ja-JP');
+// 血液検査の 数字(2幕から)。3幕からは 基準の はんいを 出さない
+function labLines(p) {
+  const pid = p.base || p.id, ref = hard() < 2, R2 = s => ref ? '(基準 ' + s + ')' : '';
+  const L = [];
+  const wbc = v => L.push('白血球 ' + fmt(v) + ' /μL' + R2('3,300〜8,600'));
+  const crp = v => L.push('CRP ' + v + ' mg/dL' + R2('0.3 以下'));
+  if (p.cat === 'bac') {
+    if (pid === 'myco') { wbc(rr(6000, 8500, 100)); crp(rr(15, 40) / 10); }
+    else if (pid === 'typhoid') { wbc(rr(2800, 3800, 100)); crp(rr(60, 110) / 10); }
+    else { wbc(rr(13000, 24000, 500)); L.push('好中球 ' + rr(82, 92) + ' %' + R2('40〜70')); crp(rr(80, 220) / 10); }
+    if (pid === 'legion') L.push('ナトリウム ' + rr(124, 130) + ' mEq/L' + R2('138〜145'));
+    if (p.boss || p.resist) L.push('プロカルシトニン ' + rr(20, 90) / 10 + ' ng/mL' + R2('0.5 未満'));
+  } else if (p.cat === 'vir') {
+    if (pid === 'dengue') { wbc(rr(1800, 3000, 100)); L.push('血小板 ' + rr(3, 9) + '万 /μL' + R2('15万〜35万')); }
+    else { wbc(rr(3000, 7500, 100)); L.push('リンパ球 ' + rr(40, 58) + ' %' + R2('20〜45')); crp(rr(2, 18) / 10); }
+  } else if (p.cat === 'fun') {
+    L.push('β-Dグルカン ' + (['candida', 'asper', 'pcp'].includes(pid) ? rr(80, 400, 10) : rr(3, 9)) + ' pg/mL' + R2('11 未満'));
+  } else {
+    if (pid === 'malaria') { L.push('血小板 ' + rr(3, 8) + '万 /μL' + R2('15万〜35万')); L.push('ヘモグロビン ' + rr(80, 105) / 10 + ' g/dL' + R2('12〜16')); }
+    else if (['ascaris', 'echino', 'anisakis'].includes(pid)) { wbc(rr(8000, 11000, 100)); L.push('好酸球 ' + rr(14, 35) + ' %' + R2('1〜6')); }
+    else { wbc(rr(5000, 8000, 100)); crp(rr(1, 5) / 10); }
+  }
+  return L;
+}
+function hardExam(kind, p, f, r) {
+  const H = hard(); if (H < 1) return;
+  const pid = p.base || p.id;
+  // 血液検査: 数字だけ(特別な 抗原・抗体の 検査は そのまま)
+  if (kind === 'blood' && !['hbv', 'hcv', 'cmv', 'crypto'].includes(pid)) { r.lines = labLines(p); r.lines.push(H < 2 ? '→ 基準と くらべて 読もう' : '→ 読みとろう'); }
+  // 迅速検査: はじめは 陰性に なりやすい(とくに ウイルス)
+  if (kind === 'rapid' && r.k === 3 && p.cat === 'vir' && B.turn <= 1 && Math.random() < 0.35) { r.lines = ['陰性……?(発症の すぐあとは ウイルスが 少なくて 陰性に なりやすい)']; r.k = 0; f.info.rapid = 0; st('falseNeg'); }
+  // 培養: 結果は 次の日
+  if (kind === 'culture' && !f.cultAt) { f.cultAt = B.turn + 1; r.lines = ['検体を 出した。結果は 次の日(培養は 菌が 育つのを 待つ)。', 'それまでは 見立てで 治療しよう(エンピリック治療)']; r.k = 0; r.wait = true; f.info.culture = 0; }
 }
