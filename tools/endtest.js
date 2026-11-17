@@ -30,7 +30,7 @@ const W = +(process.argv[2] || 375), H = +(process.argv[3] || 553);
 const bt = await p.evaluate(async () => {
     { const w = [...document.querySelectorAll('.ov button')].find(x => /わかった/.test(x.textContent)); if (w) { w.click(); await new Promise(r => setTimeout(r, 500)); } }
     document.querySelector('.ov button').click(); await new Promise(r => setTimeout(r, 500));
-    document.querySelector('.ov button') && document.querySelector('.ov button').click(); await new Promise(r => setTimeout(r, 500));
+    { const g = [...document.querySelectorAll('.ov button')].find(x => /しゅっぱつ/.test(x.textContent)); if (g) g.click(); } await new Promise(r => setTimeout(r, 500));
     const R = S.run; const pool = SG(R).enemies;
     startBattle({ foes: [pool[0], pool[1] || pool[0]], node: 'battle' }); await new Promise(r => setTimeout(r, 1500));
     for (let i = 0; i < 4; i++) { const ok = [...document.querySelectorAll('.ov button')].pop(); if (ok) ok.click(); await new Promise(r => setTimeout(r, 400)); }

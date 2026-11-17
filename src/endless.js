@@ -127,6 +127,7 @@ function endlessStart() {
     if (S.run && !await ask('<b>今の つづきは 消えるけど いい?</b>', 'はじめる')) return;
     S.endless = S.endless || { best: 0, runs: 0 }; S.endless.runs++;
     const R = newRun(0, 0); Object.assign(R, { stage: 9, asc, act: 1, coins: 40 + 20 * mlv('coin'), items: ['hint'], mod: {}, deck: ['pen', 'osel', 'sleep', 'ors', 'okayu'] });
+    R.abg = rollAbg();
     const extra = shuffle(DRUGS.filter(d => !d.endless && d.cost === 1 && !R.deck.includes(d.id) && (d.cat !== 'sup' || CARE_FOR[d.id]))).slice(0, mlv('study'));
     extra.forEach(d => { R.deck.push(d.id); learn(d.id, true); });
     S.run = R; save(); SE.play('start');
@@ -141,10 +142,11 @@ async function chooseScenario() {
   const i = await modal(`<b class="big">${R.act}幕: どこへ 派遣される?</b><p class="note">えらんだ場所で 出てくる 病原体と ボスが きまる。</p>`, three.map(s => `<span class="scnb" style="background:${s.bg}"><b>${s.em} ${s.ja}</b><span class="note">${s.desc}</span><span class="note">患者: ${PATIENTS[s.patient].short} ・ 検査: ${{ name: '名前まで', cat: '分類', gram: 'グラム染色' }[s.test]}</span></span>`));
   const s = three[i];
   R.scn = s.id; R.lastScn = s.id; R.bossId = pick(s.boss); R.mod = {};
+  R.cond = rollConds(R, s.patient); R.condKnown = false;
   const pt = PATIENTS[s.patient]; R.max = pt.hp + (R.act - 1) * 4 + 3 * mlv('run'); R.hp = R.max; R.gut = 10;
   R.map = makeMap(9); R.pos = null; R.path = []; R.pending = null; R.shop = null; R.evSeen = [];
   save();
-  await modal(`<div class="row c">${ART.patient(pt.look, true, 90)}</div><b>${s.em} ${s.ja}</b><p>今回の 患者: ${pt.ja.replace('のどがいたい', '具合のわるい')}</p><p class="note">ボスは まだ ひみつ。とちゅうの 🧭分かれ道で 流れが かわるよ。</p>`, ['しゅっぱつ!']);
+  await modal(`<div class="row c">${ART.patient(pt.look, true, 90)}</div><b>${s.em} ${s.ja}</b><p>今回の 患者: ${pt.ja.replace('のどがいたい', '具合のわるい')}</p><p class="note">ボスは まだ ひみつ(🕵️ミステリーボス)。とちゅうの 🧭分かれ道で 流れが かわるよ。</p>${R.cond.filter(c => CD[c].auto).length ? `<p>${R.cond.filter(c => CD[c].auto).map(c => CD[c].em + ' <b>' + CD[c].ja + '</b>').join('・')}</p>` : ''}<p class="note">🗣️ アレルギーや 持病は 問診で 聞こう。📊 この病院の 耐性表も 見ておこう。</p>`, ['📊 耐性表を 見る', 'しゅっぱつ!']).then(async i => { if (i === 0) await abgModal(); });
   mapScreen();
 }
 async function forkScreen() {
@@ -175,7 +177,7 @@ async function endlessOver() {
   const reached = R.act - 1 + (R.fl + 1) / 13;
   S.endless.deep = Math.max(S.endless.deep || 0, reached);
   const pts = Math.round(reached * 20) + 5; S.meta = S.meta || { pt: 0, lv: {} }; S.meta.pt += pts; S.meta.total = (S.meta.total || 0) + pts; save(); checkAch();
-  const oi = await modal(`${angelHtml()}<b class="big">👼 患者さんは 天国へ 旅立った…</b><p class="note">見送った 患者さん: <b>${(S.lost || []).length}人</b></p><b>むげん病院 おしまい</b><p><b>${R.act}幕</b> ${SC[R.scn].em}${SC[R.scn].ja} の ${R.fl + 1}階まで すすんだ。</p><p class="note">さいこう記録: ${S.endless.best || 0}幕 クリア</p><p class="got">💪 けんこうポイント <b>+${pts}</b>(ぜんぶで ${mpt()})</p><p class="note">図鑑は のこる。ポイントで 体を きたえて、次は もっと 先へ!</p>`, ['💪 からだづくり', 'タイトルへ']);
+  const oi = await modal(`${angelHtml()}<b class="big">👼 患者さんは 天国へ 旅立った…</b><p class="note">見送った 患者さん: <b>${(S.lost || []).length}人</b></p><b>むげん病院 おしまい</b><p><b>${R.act}幕</b> ${SC[R.scn].em}${SC[R.scn].ja} の ${R.fl + 1}階まで すすんだ。</p><p class="note">治した 患者さん ${R.wins9 || 0}人 ・ 入院日数 平均 ${R.wins9 ? (R.days / R.wins9).toFixed(1) : '-'}日</p><p class="note">さいこう記録: ${S.endless.best || 0}幕 クリア</p><p class="got">💪 けんこうポイント <b>+${pts}</b>(ぜんぶで ${mpt()})</p><p class="note">図鑑は のこる。ポイントで 体を きたえて、次は もっと 先へ!</p>`, ['💪 からだづくり', 'タイトルへ']);
   if (oi === 0) return metaScreen();
   title();
 }
@@ -199,9 +201,55 @@ function metaScreen(keep) {
   const card = x => {
     const l = mlv(x.id), done = l >= x.max, c = mcost(x, l);
     const dots = Array.from({ length: x.max }, (_, i) => '<i class="' + (i < l ? 'on' : '') + '"></i>').join('');
-    return '<div class="meta ' + (done ? 'done' : '') + '"><span class="mem">' + x.em + '</span><div class="mtx"><b>' + x.ja + ' <span class="note">' + x.sub + '</span></b><span class="mlv">' + dots + '</span><span class="mfx">' + (l ? '今: ' + x.fx(l) : x.fx(1)) + '</span><span class="note">' + x.why + '</span></div><button class="btn sm ' + (!done && mpt() >= c ? 'main' : '') + '" data-m="' + x.id + '" ' + (done || mpt() < c ? 'disabled' : '') + '>' + (done ? 'MAX' : '💪' + c) + '</button></div>';
+    return '<div class="meta ' + (done ? 'done' : '') + '"><span class="mem">' + x.em + '</span><div class="mtx"><b>' + x.ja + ' <span class="note">' + x.sub + '</span></b><span class="mlv">' + dots + '</span><span class="mfx">' + (l ? '今: ' + x.fx(l) : x.fx(1)) + '</span><span class="note">' + x.why + '</span></div><button class="btn sm ' + (!done && mpt() >= c ? 'main' : '') + '" data-m="' + x.id + '" ' + (done || mpt() < c ? 'disabled' : '') + '>' + (done ? 'MAX' : '💪' + c) + '</button>' + (l ? '<button class="btn sm mminus" data-mr="' + x.id + '">− もどす</button>' : '') + '</div>';
   };
-  screen(topBar('💪 からだづくり', title) + '<p class="note">むげん病院で すすむほど <b>けんこうポイント</b>が もらえる。きたえた 体は ずっと のこる。</p><div class="mpt">💪 <b>' + mpt() + '</b> ポイント</div><div class="metas">' + META.map(card).join('') + '</div><button class="btn main" id="mgo">♾️ むげん病院へ</button>', '', keep);
+  screen(topBar('💪 からだづくり', title) + '<p class="note">むげん病院で すすむほど <b>けんこうポイント</b>が もらえる。きたえた 体は ずっと のこる。</p><div class="mpt">💪 <b>' + mpt() + '</b> ポイント</div><div class="metas">' + META.map(card).join('') + '</div>' + (Object.values(S.meta.lv).some(v => v) ? '<button class="btn" id="mall">↩ ポイントを ぜんぶ もどす</button>' : '') + '<button class="btn main" id="mgo">♾️ むげん病院へ</button>', '', keep);
   app.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { const x = META.find(y => y.id === b.dataset.m), l = mlv(x.id), c = mcost(x, l); if (l >= x.max || mpt() < c) return; S.meta.pt -= c; S.meta.lv[x.id] = l + 1; save(); SFX.play('learn'); toast(x.em + ' ' + x.ja + ' Lv' + (l + 1) + '! ' + x.fx(l + 1), 2200); metaScreen(true); });
+  app.querySelectorAll('[data-mr]').forEach(b => b.onclick = () => { const x = META.find(y => y.id === b.dataset.mr), l = mlv(x.id); if (!l) return; S.meta.pt += mcost(x, l - 1); S.meta.lv[x.id] = l - 1; save(); SFX.play('coin'); toast(`${x.em} ${x.ja} Lv${l - 1}(💪${mcost(x, l - 1)} もどした)`, 1800); metaScreen(true); });
+  const ma = $('#mall'); if (ma) ma.onclick = async () => { if (!await ask('<b>ポイントを ぜんぶ もどす?</b><p class="note">きたえた 体が もとに もどり、ポイントが かえってくる。</p>', 'もどす')) return; let back = 0; META.forEach(x => { for (let l = mlv(x.id); l > 0; l--) back += mcost(x, l - 1); S.meta.lv[x.id] = 0; }); S.meta.pt += back; save(); SFX.play('coin'); toast(`💪 ${back}ポイント もどった`, 1800); metaScreen(true); };
   $('#mgo').onclick = () => endlessStart();
+}
+
+// ---- 患者さんの 条件(むげん病院)
+const COND = [
+  { id: 'pcal', em: '🚫', ja: 'ペニシリン アレルギー', who: ['kid', 'dad', 'gpa'], stop: true, hit: 8, bad: d => /ペニシリン/.test(d.cls), msg: 'じんましん・息苦しさ… アナフィラキシー! ペニシリン系は 使えない', why: 'ペニシリン系に アレルギーが ある人には 使わない。別の 系統の 薬を えらぶ。' },
+  { id: 'child', em: '👶', ja: '小さい子', who: ['kid'], auto: true, hit: 3, bad: d => /テトラサイクリン|キノロン/.test(d.cls), msg: '小さい子には ふつう 使わない 薬(歯や 関節への えいきょう)', why: 'テトラサイクリン系(歯の 色)・キノロン系(関節)は 小さい子には ふつう さける。' },
+  { id: 'kidney', em: '🫘', ja: '腎臓が 弱い', who: ['dad', 'gpa'], hit: 4, bad: d => /アミノグリコシド|グリコペプチド/.test(d.cls), msg: '腎臓に 負担が かかった…', why: 'アミノグリコシド系・バンコマイシンは 腎臓に 負担。腎臓が 弱い人では さけるか 量を へらす。' },
+  { id: 'elder', em: '👴', ja: 'お年より', who: ['gpa'], auto: true, hit: 3, bad: d => !!d.nsaid, msg: 'お年よりに 痛み止め(NSAIDs)で 胃や 腎臓に 負担', why: 'お年よりは NSAIDsで 胃かいようや 腎臓の 負担が おきやすい。熱・痛みには アセトアミノフェンが 安心。' },
+];
+const CD = Object.fromEntries(COND.map(c => [c.id, c]));
+function rollConds(R, patient) {
+  const pool = COND.filter(c => c.who.includes(patient));
+  const n = R.act >= 2 ? 1 : (Math.random() < 0.5 ? 1 : 0);
+  return pool.filter(c => c.auto).map(c => c.id).concat(shuffle(pool.filter(c => !c.auto)).slice(0, n).map(c => c.id));
+}
+const condsOf = () => (S.run && S.run.stage === 9 && S.run.cond) || [];
+const contraFor = d => condsOf().map(id => CD[id]).filter(c => c.bad(d));
+function condChips() {
+  const R = S.run; if (!R || R.stage !== 9 || !R.cond) return '';
+  const show = R.cond.filter(c => CD[c].auto || R.condKnown), hidden = R.cond.length - show.length;
+  return '<span class="conds" data-cond="1">' + show.map(c => '<i>' + CD[c].em + '<b>' + CD[c].ja + '</b></i>').join('') + (!R.condKnown ? '<i class="q">❔<b>問診で 持病・アレルギー</b></i>' : '') + '</span>';
+}
+function condModal() {
+  const R = S.run;
+  modal('<b class="big">🧑‍⚕️ この 患者さんの 条件</b>' + (R.cond.length ? R.cond.map(c => (CD[c].auto || R.condKnown) ? '<p class="got">' + CD[c].em + ' <b>' + CD[c].ja + '</b><br><span class="note">' + CD[c].why + '</span></p>' : '').join('') : '') + (!R.condKnown ? '<p class="note">❔ アレルギーや 持病は 🗣️問診で わかる。わからないまま 薬を えらぶと…?</p>' : '') + (R.condKnown && !R.cond.length ? '<p>とくに なし</p>' : ''), ['とじる']);
+}
+// ---- 病院の 耐性表(アンチバイオグラム)
+function rollAbg() {
+  const pids = [...new Set(SCN.flatMap(s => s.pool.concat(s.elites)))].filter(id => P[id] && P[id].cat === 'bac' && !P[id].base);
+  const out = {};
+  for (const pid of shuffle(pids)) {
+    const eff = DRUGS.filter(d => effOf(d, P[pid]) === 2 && d.cat === 'abx');
+    if (eff.length < 2) continue;
+    const best = eff.filter(d => isBest(d, P[pid]));
+    const d = pick(best.length && Math.random() < 0.6 ? best : eff);
+    out[pid] = { d: d.id, pct: 30 + rnd(5) * 10 };
+    if (Object.keys(out).length >= 4) break;
+  }
+  return out;
+}
+function abgModal() {
+  const R = S.run; if (!R || !R.abg) return;
+  const rows = Object.entries(R.abg).map(([pid, x]) => '<tr><td>' + P[pid].ja + '</td><td>' + D[x.d].ja + '</td><td><b>' + x.pct + '%</b></td></tr>').join('');
+  return modal('<b class="big">📊 この 病院の 耐性表</b><p class="note">この 病院では、次の 菌の 一部が その薬に 耐性(効かない)。いつもの 第一選択が 効かない ことも。🧫培養で 確かめられる。</p><table class="abg"><tr><th>菌</th><th>効かないかも</th><th>割合</th></tr>' + rows + '</table>', ['とじる']);
 }
