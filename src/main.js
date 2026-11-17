@@ -25,9 +25,13 @@ function bindBack(fn) { const b = $('#back') || $('#quit'); if (b) b.onclick = (
 function modal(html, btns) {
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'ov';
-    d.innerHTML = `<div class="box">${html}<div class="acts">${btns.map((b, i) => `<button class="btn ${i === 0 ? 'main' : ''}" data-i="${i}">${b}</button>`).join('')}</div></div>`;
+    const ci = btns.findIndex(b => typeof b === 'string' && /^(とじる|やめる|もどる|いらない|OK)$/.test(b.replace(/<[^>]*>/g, '').trim()));
+    const cancel = ci >= 0 && (btns.length === 1 ? /とじる|もどる/.test(btns[0]) : true) ? ci : -1;
+    d.innerHTML = `<div class="boxw">${cancel >= 0 ? '<button class="mx" aria-label="とじる">✕</button>' : ''}<div class="box">${html}<div class="acts">${btns.map((b, i) => `<button class="btn ${i === 0 ? 'main' : ''}" data-i="${i}">${b}</button>`).join('')}</div></div></div>`;
     document.body.appendChild(d);
-    d.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { d.remove(); res(+b.dataset.i); });
+    const done = i => { if (!d.isConnected) return; d.remove(); res(i); };
+    d.querySelectorAll('[data-i]').forEach(b => b.onclick = () => done(+b.dataset.i));
+    if (cancel >= 0) { d.querySelector('.mx').onclick = () => { SE.play('select'); done(cancel); }; d.addEventListener('click', e => { if (e.target === d) done(cancel); }); }
   });
 }
 const ask = async (html, yes) => (await modal(html, [yes, 'やめる'])) === 0;

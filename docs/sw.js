@@ -1,5 +1,5 @@
 // 自動生成(tools/build-pages.js)。手で編集しない。
-const CACHE = 'byougen-0cc279b249';
+const CACHE = 'byougen-2ad9d457d1';
 const PRECACHE = ["./","app.js","furi.js","icons/apple-touch-icon.png","icons/icon-192.png","icons/icon-512.png","icons/maskable-512.png","manifest.webmanifest"];
 const LIBS = [];
 self.addEventListener('install', e => {

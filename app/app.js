@@ -1293,9 +1293,13 @@ function bindBack(fn) { const b = $('#back') || $('#quit'); if (b) b.onclick = (
 function modal(html, btns) {
   return new Promise(res => {
     const d = document.createElement('div'); d.className = 'ov';
-    d.innerHTML = `<div class="box">${html}<div class="acts">${btns.map((b, i) => `<button class="btn ${i === 0 ? 'main' : ''}" data-i="${i}">${b}</button>`).join('')}</div></div>`;
+    const ci = btns.findIndex(b => typeof b === 'string' && /^(とじる|やめる|もどる|いらない|OK)$/.test(b.replace(/<[^>]*>/g, '').trim()));
+    const cancel = ci >= 0 && (btns.length === 1 ? /とじる|もどる/.test(btns[0]) : true) ? ci : -1;
+    d.innerHTML = `<div class="boxw">${cancel >= 0 ? '<button class="mx" aria-label="とじる">✕</button>' : ''}<div class="box">${html}<div class="acts">${btns.map((b, i) => `<button class="btn ${i === 0 ? 'main' : ''}" data-i="${i}">${b}</button>`).join('')}</div></div></div>`;
     document.body.appendChild(d);
-    d.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { d.remove(); res(+b.dataset.i); });
+    const done = i => { if (!d.isConnected) return; d.remove(); res(i); };
+    d.querySelectorAll('[data-i]').forEach(b => b.onclick = () => done(+b.dataset.i));
+    if (cancel >= 0) { d.querySelector('.mx').onclick = () => { SE.play('select'); done(cancel); }; d.addEventListener('click', e => { if (e.target === d) done(cancel); }); }
   });
 }
 const ask = async (html, yes) => (await modal(html, [yes, 'やめる'])) === 0;
@@ -2603,7 +2607,9 @@ const BOOK = (() => {
   const chapters = () => { const m = []; pages.forEach((p, i) => { const last = m[m.length - 1]; if (!last || last.ch !== p.ch) m.push({ ch: p.ch, i, items: [] }); m[m.length - 1].items.push({ t: p.title, i }); }); return m; };
   function frame(inner) {
     if (!el) { el = document.createElement('div'); el.id = 'book'; document.body.appendChild(el); }
-    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkx">✕ とじる</button><button class="btn sm" id="bkb" ${hist.length ? '' : 'disabled'}>↩ もどる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
+    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkb" ${hist.length ? '' : 'disabled'}>↩ もどる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
+    el.querySelector('.bk').insertAdjacentHTML('afterbegin', '<button class="mx bkmx" id="bkx" aria-label="とじる">✕</button>');
+    el.onclick = e => { if (e.target === el) { SE.play('select'); el.remove(); el = null; } };
     el.querySelector('#bkx').onclick = () => { SE.play('select'); el.remove(); el = null; };
     el.querySelector('#bkt').onclick = () => { SE.play('select'); jumpFrom(); toc(); };
     el.querySelector('#bkb').onclick = () => { if (!hist.length) return; const h = hist.pop(); if (h === 'toc') return toc(); if (h && h.q) { inList = true; return search(h.q); } flip(); show(h, 'r'); };

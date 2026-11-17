@@ -80,7 +80,9 @@ const BOOK = (() => {
   const chapters = () => { const m = []; pages.forEach((p, i) => { const last = m[m.length - 1]; if (!last || last.ch !== p.ch) m.push({ ch: p.ch, i, items: [] }); m[m.length - 1].items.push({ t: p.title, i }); }); return m; };
   function frame(inner) {
     if (!el) { el = document.createElement('div'); el.id = 'book'; document.body.appendChild(el); }
-    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkx">✕ とじる</button><button class="btn sm" id="bkb" ${hist.length ? '' : 'disabled'}>↩ もどる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
+    el.innerHTML = `<div class="bk"><div class="bktop"><button class="btn sm" id="bkb" ${hist.length ? '' : 'disabled'}>↩ もどる</button><button class="btn sm" id="bkt">📑 目次</button><input class="txt" id="bkq" placeholder="🔍 さがす(例: 抗菌薬・肺・グラム陰性)"></div>${inner}</div>`;
+    el.querySelector('.bk').insertAdjacentHTML('afterbegin', '<button class="mx bkmx" id="bkx" aria-label="とじる">✕</button>');
+    el.onclick = e => { if (e.target === el) { SE.play('select'); el.remove(); el = null; } };
     el.querySelector('#bkx').onclick = () => { SE.play('select'); el.remove(); el = null; };
     el.querySelector('#bkt').onclick = () => { SE.play('select'); jumpFrom(); toc(); };
     el.querySelector('#bkb').onclick = () => { if (!hist.length) return; const h = hist.pop(); if (h === 'toc') return toc(); if (h && h.q) { inList = true; return search(h.q); } flip(); show(h, 'r'); };
