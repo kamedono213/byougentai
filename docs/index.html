@@ -318,6 +318,25 @@ table.abg { width: 100%; border-collapse: collapse; font-size: 13px; margin: 6px
 .syms i.flare { background: #b3261e; border-color: #ffd34d; animation: pulse 1s infinite; } .syms i.flare b { color: #fff; font-size: 11px; }
 .syms i.ok { background: #1f6a3a; border-color: #7dffa8; } .syms i.ok b { color: #dfffe9; }
 .abgbtn { display: inline-flex; align-items: center; gap: 2px; border-color: #ffd34d !important; } .abgbtn small { font-size: 11px; font-weight: 800; }
+.bagbtn { display: inline-flex; align-items: center; gap: 2px; } .bagbtn small { font-size: 11px; font-weight: 800; }
+.baglist { display: grid; gap: 6px; text-align: left; } .baglist > div { display: grid; grid-template-columns: 40px 1fr; gap: 6px; align-items: center; background: #13233a; border-radius: 10px; padding: 6px; } .baglist .bigem { font-size: 26px; text-align: center; } .baglist b { display: block; }
+.lh { display: inline-block; min-width: 1.4em; text-align: center; border-radius: 6px; font-size: 11px; padding: 0 3px; color: #fff; } .lh.h { background: #e0453a; } .lh.l { background: #2f7de1; }
+.sceneleft { max-width: 36%; } .sceneleft .relics { flex-wrap: wrap; } .sceneleft .bagbtn small { display: none; } .sceneleft .bagbtn::after { content: attr(data-n); font-size: 11px; font-weight: 800; } .sceneleft .abgbtn small { font-size: 10px; }
+.sceneleft .bagbtn small, .sceneleft .abgbtn small { white-space: nowrap; }
+.sceneleft .syms i { font-size: 11.5px; }
+.setbox { display: grid; gap: 10px; margin-top: 10px; } .setbox p { font-size: 16px; text-align: center; }
+.chlog { display: grid; gap: 10px; padding-bottom: 20px; }
+.chv { background: #13233a; border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 10px; } .chv.big { border-color: #ffd34d; box-shadow: 0 0 10px rgba(255,211,77,.25); }
+.chh { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; } .chh b { font-size: 17px; color: #ffd34d; } .chh span { font-weight: 800; } .chh i { font-style: normal; font-size: 11px; background: #ffd34d; color: #2b1d0a; border-radius: 6px; padding: 0 5px; } .chh small { margin-left: auto; color: #9fb3d1; font-size: 11px; }
+.chv p { margin: 2px 0; font-size: 13px; line-height: 1.8; text-align: left; }
+.ctag { display: inline-block; min-width: 2.6em; text-align: center; font-size: 10.5px; font-weight: 900; border-radius: 6px; padding: 0 4px; margin-right: 2px; color: #fff; } .ctag.new { background: #e0453a; } .ctag.imp { background: #2f7de1; } .ctag.bal { background: #8a5ad6; } .ctag.fix { background: #2f9d5a; }
+.karte { display: inline-flex; align-items: center; gap: 3px; background: rgba(19,35,58,.9); border: 1.5px solid #9fb3d1; border-radius: 10px; padding: 1px 6px; font-size: 14px; color: #fff; pointer-events: auto; max-width: 100%; }
+.karte span { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .karte em { font-style: normal; margin-left: 3px; padding-left: 3px; border-left: 1px solid #9fb3d1; } .karte.on { border-color: #ffd34d; }
+.kpanel { pointer-events: auto; background: rgba(13,24,40,.96); border: 1.5px solid #ffd34d; border-radius: 10px; padding: 5px; display: grid; gap: 4px; max-height: 120px; overflow-y: auto; box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+.kpanel .kh { margin: 0; font-size: 10px; color: #9fb3d1; } .kpanel .syms { position: static; max-width: none; }
+.sceneleft { max-width: 44%; } .battleScr .scene.n3 .sceneleft { max-width: 27%; } .battleScr .scene.n3 .karte span { display: none; } .battleScr .scene.n3 .syms i b { font-size: 10px; white-space: normal; }
+.kpanel { position: absolute; top: 100%; left: 0; width: min(300px, 84vw); margin-top: 3px; z-index: 6; }
+.tabdd { background: #3a2812; border-color: #7a5428; white-space: nowrap; }
 /* からだづくり */
 .mpt { font-size: 18px; text-align: center; margin: 6px 0; color: #ffd34d; }
 .metas { display: grid; gap: 8px; margin-bottom: 12px; }

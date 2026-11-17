@@ -230,8 +230,8 @@ const condsOf = () => (S.run && S.run.stage === 9 && S.run.cond) || [];
 const contraFor = d => condsOf().map(id => CD[id]).filter(c => c.bad(d));
 function condChips() {
   const R = S.run; if (!R || R.stage !== 9 || !R.cond) return '';
-  const show = R.cond.filter(c => CD[c].auto || R.condKnown), hidden = R.cond.length - show.length;
-  return '<span class="conds" data-cond="1">' + show.map(c => '<i>' + CD[c].em + '<b>' + CD[c].ja + '</b></i>').join('') + (!R.condKnown ? '<i class="q">❔<b>問診で 持病・アレルギー</b></i>' : '') + '</span>';
+  const show = R.cond.filter(c => CD[c].auto || R.condKnown);
+  return '<span class="conds" data-cond="1"><i>🧑‍⚕️<b>条件</b>' + show.map(c => CD[c].em).join('') + (!R.condKnown ? '<b>❔問診で</b>' : (show.length ? '' : '<b>なし</b>')) + '</i></span>';
 }
 function condModal() {
   const R = S.run;
@@ -263,24 +263,26 @@ const rr = (a, b, step = 1) => a + Math.floor(Math.random() * ((b - a) / step + 
 const fmt = n => n.toLocaleString('ja-JP');
 // 血液検査の 数字(2幕から)。3幕からは 基準の はんいを 出さない
 function labLines(p) {
-  const pid = p.base || p.id, ref = hard() < 2, R2 = s => ref ? '(基準 ' + s + ')' : '';
+  const pid = p.base || p.id, ref = hard() < 2;
   const L = [];
-  const wbc = v => L.push('白血球 ' + fmt(v) + ' /μL' + R2('3,300〜8,600'));
-  const crp = v => L.push('CRP ' + v + ' mg/dL' + R2('0.3 以下'));
+  // 値と 基準(lo〜hi)から H/L を つける。基準の 文字は 2幕だけ
+  const v = (name, val, unit, lo, hi, txt) => { const n = typeof val === 'number' ? val : parseFloat(val); const f = hi != null && n > hi ? ' <b class="lh h">H</b>' : lo != null && n < lo ? ' <b class="lh l">L</b>' : ''; L.push(name + ' ' + (typeof val === 'number' && val >= 1000 ? fmt(val) : val) + ' ' + unit + f + (ref ? '(基準 ' + txt + ')' : '')); };
+  const wbc = x => v('白血球', x, '/μL', 3300, 8600, '3,300〜8,600');
+  const crp = x => v('CRP', x, 'mg/dL', null, 0.3, '0.3 以下');
   if (p.cat === 'bac') {
     if (pid === 'myco') { wbc(rr(6000, 8500, 100)); crp(rr(15, 40) / 10); }
     else if (pid === 'typhoid') { wbc(rr(2800, 3800, 100)); crp(rr(60, 110) / 10); }
-    else { wbc(rr(13000, 24000, 500)); L.push('好中球 ' + rr(82, 92) + ' %' + R2('40〜70')); crp(rr(80, 220) / 10); }
-    if (pid === 'legion') L.push('ナトリウム ' + rr(124, 130) + ' mEq/L' + R2('138〜145'));
-    if (p.boss || p.resist) L.push('プロカルシトニン ' + rr(20, 90) / 10 + ' ng/mL' + R2('0.5 未満'));
+    else { wbc(rr(13000, 24000, 500)); v('好中球', rr(82, 92), '%', 40, 70, '40〜70'); crp(rr(80, 220) / 10); }
+    if (pid === 'legion') v('ナトリウム', rr(124, 130), 'mEq/L', 138, 145, '138〜145');
+    if (p.boss || p.resist) v('プロカルシトニン', rr(20, 90) / 10, 'ng/mL', null, 0.5, '0.5 未満');
   } else if (p.cat === 'vir') {
-    if (pid === 'dengue') { wbc(rr(1800, 3000, 100)); L.push('血小板 ' + rr(3, 9) + '万 /μL' + R2('15万〜35万')); }
-    else { wbc(rr(3000, 7500, 100)); L.push('リンパ球 ' + rr(40, 58) + ' %' + R2('20〜45')); crp(rr(2, 18) / 10); }
+    if (pid === 'dengue') { wbc(rr(1800, 3000, 100)); v('血小板', rr(3, 9) + '万', '/μL', 15, 35, '15万〜35万'); }
+    else { wbc(rr(3000, 7500, 100)); v('リンパ球', rr(40, 58), '%', 20, 45, '20〜45'); crp(rr(2, 18) / 10); }
   } else if (p.cat === 'fun') {
-    L.push('β-Dグルカン ' + (['candida', 'asper', 'pcp'].includes(pid) ? rr(80, 400, 10) : rr(3, 9)) + ' pg/mL' + R2('11 未満'));
+    v('β-Dグルカン', ['candida', 'asper', 'pcp'].includes(pid) ? rr(80, 400, 10) : rr(3, 9), 'pg/mL', null, 11, '11 未満');
   } else {
-    if (pid === 'malaria') { L.push('血小板 ' + rr(3, 8) + '万 /μL' + R2('15万〜35万')); L.push('ヘモグロビン ' + rr(80, 105) / 10 + ' g/dL' + R2('12〜16')); }
-    else if (['ascaris', 'echino', 'anisakis'].includes(pid)) { wbc(rr(8000, 11000, 100)); L.push('好酸球 ' + rr(14, 35) + ' %' + R2('1〜6')); }
+    if (pid === 'malaria') { v('血小板', rr(3, 8) + '万', '/μL', 15, 35, '15万〜35万'); v('ヘモグロビン', rr(80, 105) / 10, 'g/dL', 12, 16, '12〜16'); }
+    else if (['ascaris', 'echino', 'anisakis'].includes(pid)) { wbc(rr(8000, 11000, 100)); v('好酸球', rr(14, 35), '%', 1, 6, '1〜6'); }
     else { wbc(rr(5000, 8000, 100)); crp(rr(1, 5) / 10); }
   }
   return L;
