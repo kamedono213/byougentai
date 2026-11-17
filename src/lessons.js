@@ -17,6 +17,10 @@ function gramSVG(p, size = 64) {
   return `<svg viewBox="0 0 64 64" width="${size}" height="${size}" class="gram"><circle cx="32" cy="32" r="30" fill="#fff6e8" stroke="#c9b88f" stroke-width="2"/><circle cx="20" cy="20" r="6" fill="#f3c9d4" opacity=".6"/><circle cx="46" cy="22" r="5" fill="#f3c9d4" opacity=".6"/>${shapes[p.shape] || ''}</svg>`;
 }
 
+MANUAL.l_care = [
+  { t: '🛌 ささえは 症状に 合わせる', b: `<p>病原体を やっつけるのは 薬と めんえき。そのあいだ 体を 楽にするのが <b>ささえ</b>。<b>今 出ている 症状</b>に 合わせて えらぶ。</p><div class="map4"><div>🤒 熱・😣いたみ → <b>アセトアミノフェン</b>・クーリング</div><div>💩 げり → <b>経口補水液</b>・おかゆ</div><div>🤮 はく → <b>経口補水液を 少しずつ</b>(おかゆは あとで)</div><div>🤮 はげしく はいて ぐったり → <b>点滴(輸液)</b>。おかゆは 逆効果</div><div>😮‍💨 せき → 加湿器・はちみつ(1歳未満は ダメ)・せき止め</div><div>🫳 かゆみ → 抗ヒスタミン薬</div></div><p>合うと <b>✨ぴったり</b>で 効果アップ。熱が ないのに 解熱剤など、合わないと あまり 効かない。患者さんの 横の <b>症状の しるし</b>を 見よう。</p>` },
+  { t: '🛡️ めんえき隊は 体しだいで 強くなる', b: `<p>ぴったりの ささえ・よく 休む・ヨーグルトで おなかを 元気に・薬と めんえきの 協力… <b>体に いいことを 続けると</b>、めんえき隊が <b>レベルアップ</b>する。</p><p class="note">合わない 薬や 体に わるい えらび方を すると、少し 遠のく。</p>` },
+];
 MANUAL.reason = [
   { t: 'お医者さんの 考え方(臨床推論)', b: `<div class="map4"><div>① <b>どこの</b> 感染? (のど・肺・おしっこ・ひふ…)</div><div>② <b>だれ</b>が? (子ども・旅行帰り・入院中…)</div><div>③ そこで <b>よくある</b> 原因は?</div><div>④ それに <b>ばっちりの薬</b>(第一選択)で 治療を 始める</div><div>⑤ <b>検査</b>で 確かめて、薬を しぼる</div></div><p>検査を 待たずに 見立てで 治療を 始めるのも 本物の 治療。<b>当たりを つける</b>のが 名医の うで!</p>` },
 ];
@@ -30,10 +34,11 @@ const TUT2 = [
   { man: 'reason', next: 'l_ask', foe: 'flu', give: ['osel'], tip: 'まず 🔬検査 → 🗣️問診。学校で はやっていて、急な 高熱・ふしぶしの いたみ なら インフルエンザ。タミフルで 治療を 始めよう!' },
   { man: 'l_gram', foe: ['staph', 'ecoli'], give: ['cez', 'ctrx'], tip: '🔬グラム染色 で、紫の ブドウの房なら セファゾリン、赤い 棒なら セフトリアキソン!' },
   { man: 'l_rapid', foe: ['strep', 'adeno'], give: ['amox', 'ors'], tip: '🧪迅速検査 で 陽性なら 名前が わかる。溶連菌なら アモキシシリン、アデノなら 薬は いらない(体をささえる)。' },
+  { man: 'l_care', foe: 'noro', give: ['ors', 'okayu', 'drip', 'apap', 'sleep'], tip: 'ノロウイルスは はく・げり。熱は ない。まず 🛌ささえるで 経口補水液! 解熱剤は 熱が ないので 効きにくい。' },
   { man: 'l_more', next: 'l_cult', foe: 'ecoli', give: ['mepm', 'ctrx'], tip: 'まず メロペネムで 始めて、🧫培養 で 大腸菌と わかったら セフトリアキソンに 切りかえよう(しぼりこみ)。' },
 ];
 function lessons(step) {
-  if (step >= TUT2.length) { S.tut2 = 99; save(); checkAch(); modal('<b class="big">🎓 検査けんしゅう 修了!</b><p>問診・グラム染色・迅速検査・培養を 組み合わせて、正体を しぼりこもう。</p>', ['OK']).then(title); return; }
+  if (step >= TUT2.length) { S.tut2 = 99; save(); checkAch(); modal('<b class="big">🎓 検査けんしゅう 修了!</b><p>問診・グラム染色・迅速検査・培養を 組み合わせて、正体を しぼりこもう。ささえは 症状に 合わせて。</p>', ['OK']).then(title); return; }
   const T = TUT2[step]; S.tut2 = step; save();
   const go = () => {
     (T.give || []).forEach(id => learn(id, true)); save();

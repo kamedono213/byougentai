@@ -129,7 +129,9 @@ function endlessStart() {
     const R = newRun(0, 0); Object.assign(R, { stage: 9, asc, act: 1, coins: 40 + 20 * mlv('coin'), items: ['hint'], mod: {}, deck: ['pen', 'osel', 'sleep', 'ors', 'okayu'] });
     const extra = shuffle(DRUGS.filter(d => !d.endless && d.cost === 1 && !R.deck.includes(d.id) && (d.cat !== 'sup' || CARE_FOR[d.id]))).slice(0, mlv('study'));
     extra.forEach(d => { R.deck.push(d.id); learn(d.id, true); });
-    S.run = R; save(); SE.play('start'); chooseScenario();
+    S.run = R; save(); SE.play('start');
+    if (S.endless.runs === 1) await modal('<b class="big">💡 むげん病院の チップス</b><div class="tips"><div>❓ 病原体は <b>正体が わからない</b> 状態で 出てくる。最初は 大まかな 症状だけ。<b>🗣️問診</b>や 検査で しぼりこもう</div><div>💊 薬は 毎回 <b>5つ</b>から スタート。ごほうびや <b>💊薬局</b>で ふやす</div><div>📞 合う薬が ない時は 検査の 中の <b>専門医に 相談</b>。病原体と 薬を 当てたら その薬が もらえる</div><div>💪 負けても <b>けんこうポイント</b>が たまる。<b>からだづくり</b>で 体を きたえると 次から 有利</div></div>', ['わかった!']);
+    chooseScenario();
   });
 }
 async function chooseScenario() {

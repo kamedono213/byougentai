@@ -31,8 +31,9 @@ function dealCells() {
   const f = B.foes.find(x => x.hp > 0); const p = f ? P[f.pid] : null;
   const good = p ? { bac: 'neut', vir: 'killt', fun: 'neut', par: 'eos' }[p.cat] : null;
   const pool = shuffle(CELLS.map(c => c.id));
-  let hand = pool.slice(0, 3);
-  if (good && !hand.includes(good) && Math.random() < 0.6) hand[rnd(3)] = good;
+  const n = (S.run && S.run.immLv >= 2) ? 4 : 3;
+  let hand = pool.slice(0, n);
+  if (good && !hand.includes(good) && Math.random() < 0.6) hand[rnd(n)] = good;
   B.cells = hand; B.cellUsed = false;
 }
 async function useCell(id) {
@@ -40,8 +41,8 @@ async function useCell(id) {
   if (B.cellExtra) { B.cellExtra = 0; setTimeout(() => { if (B) { B.cellUsed = false; renderBattle(); } }, 50); }
   const R = S.run; let ti = B.tgt; if (!B.foes[ti] || B.foes[ti].hp <= 0) ti = B.foes.findIndex(f => f.hp > 0);
   const f = B.foes[ti], p = P[f.pid];
-  const pow = clamp(B.immUp - B.immDown + Math.round(R.hp / R.max * 2), 0, 6);
-  const r = CL[id].fx(p, pow, f); B.cellUsed = true; st('cell');
+  const pow = clamp(B.immUp - B.immDown + Math.round(R.hp / R.max * 2), 0, 6) + (R.immLv || 0);
+  const r = CL[id].fx(p, pow, f); B.cellUsed = true; st('cell'); if (f.dots.length) immGood(1, '薬と めんえきの 協力');
   if (r.immUp) { B.immUp = Math.min(4, B.immUp + r.immUp); SFX.play('guard'); floatTxt('🛡️めんえき UP', null, 'heal'); }
   if (r.guard) { B.guard += r.guard; SFX.play('guard'); floatTxt('🛡️+' + r.guard, null, 'heal'); }
   if (id === 'anti') { f.mark = 2; if (f.sp === 'tox') f.spDetox = true; floatTxt('🎯 目じるし(薬が 効きやすい)', ti, 'good'); }

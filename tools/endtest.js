@@ -26,7 +26,9 @@ const W = +(process.argv[2] || 375), H = +(process.argv[3] || 553);
   });
   console.log('start', JSON.stringify(st));
   // 派遣先を えらぶ → バトル
-  const bt = await p.evaluate(async () => {
+  await p.screenshot({ path: 'shots/end-tips.png' });
+const bt = await p.evaluate(async () => {
+    { const w = [...document.querySelectorAll('.ov button')].find(x => /わかった/.test(x.textContent)); if (w) { w.click(); await new Promise(r => setTimeout(r, 500)); } }
     document.querySelector('.ov button').click(); await new Promise(r => setTimeout(r, 500));
     document.querySelector('.ov button') && document.querySelector('.ov button').click(); await new Promise(r => setTimeout(r, 500));
     const R = S.run; const pool = SG(R).enemies;

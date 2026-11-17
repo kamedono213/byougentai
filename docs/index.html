@@ -299,6 +299,11 @@ a { color: var(--mute); }
 @keyframes floatUp { from { transform: translateY(4px); } to { transform: translateY(-6px); } }
 .lostbox { display: grid; grid-template-columns: 70px 1fr; gap: 8px; align-items: center; background: #1d2238; border: 1.5px solid #8a93c9; border-radius: 12px; padding: 8px; margin-bottom: 10px; }
 .lostbox .angel svg { width: 64px; height: 64px; } .lostbox > div { display: grid; gap: 2px; }
+.battleScr .cells { flex-wrap: wrap; gap: 3px 4px; }
+.battleScr .cl-h { flex: 1 0 100%; display: flex; gap: 8px; align-items: baseline; min-width: 0; line-height: 1.6; } .battleScr .cl-h br { display: none; }
+.battleScr .cell { flex: 1 1 0; flex-direction: column; justify-content: center; padding: 2px 1px; gap: 0; }
+.battleScr .cell b { text-align: center; white-space: nowrap; font-size: 10.5px; letter-spacing: -.4px; line-height: 1.7; }
+@media (max-height: 620px) { .battleScr .cl-h { display: none; } .battleScr .cell .cz, .battleScr .cell svg { width: 20px !important; height: 20px !important; } .battleScr .cell b { line-height: 1.5; } }
 /* からだづくり */
 .mpt { font-size: 18px; text-align: center; margin: 6px 0; color: #ffd34d; }
 .metas { display: grid; gap: 8px; margin-bottom: 12px; }
