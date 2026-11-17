@@ -2075,7 +2075,7 @@ async function consult() {
   const right = eff2.filter(d => !has(d.id) && d.id !== f.rd).sort((a, b) => isBest(b, p) - isBest(a, p))[0] || eff2.sort((a, b) => isBest(b, p) - isBest(a, p))[0];
   const dc = { bac: 'abx', vir: 'vir', fun: 'fun', par: 'par' }[p.cat]; const pool = DRUGS.filter(d => d.cat !== 'sup' && !d.endless && effOf(d, p) === 0 && !eff.includes(d)); const wrongD = shuffle(pool.filter(d => d.cat === dc)).slice(0, 2).concat(shuffle(pool.filter(d => d.cat !== dc)).slice(0, 1)); while (wrongD.length < 3) { const x = pool.find(d => !wrongD.includes(d)); if (!x) break; wrongD.push(x); }
   const optD = shuffle([right, ...wrongD]);
-  const a2 = await modal(`<b class="big">⭕ 正解! ${p.ja}</b><p>専門医: 「では、どの 薬が 効く?」</p>`, optD.map(d => `<span class="scnb optd2">${drugArt(d, 36)}<b>${d.ja}</b><span class="note">${d.cls}</span></span>`));
+  const a2 = await modal(`<b class="big">⭕ 正解! ${p.ja}</b><p>専門医: 「では、どの 薬が 効く?」</p>`, optD.map(d => `<span class="scnb optd2" data-did="${d.id}">${drugArt(d, 36)}<b>${d.ja}</b><span class="note">${d.cls}</span></span>`));
   if (optD[a2] === right) {
     const nw = gain(right.id); save(); SFX.play('learn'); st('consultOk');
     await modal(`<b class="big">🎁 ${nw ? '薬を もらった!' : 'そのとおり!'}</b>${drugCard(right)}<p class="note">${p.ja}には ${eff.map(d => d.ja).slice(0, 4).join('・')} など。</p>`, ['やった!']);
@@ -2258,8 +2258,8 @@ function rewardScreen(node) {
   save();
   screen(`${topBar('ほうしゅう', null)}${statusBar(R)}<div class="reward"><p>🪙 ${coin} コイン ゲット!</p>${relic ? `<p class="got">${relic.em} <b>${relic.ja}</b> を 手に入れた!<br><span class="note">${relic.desc}</span></p>` : ''}
     <p>1つ えらぼう:</p>${opts.map((o, i) => {
-      if (o.k === 'learn') { const d = D[o.id]; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">🎁 新しい薬</span><b>${d.ja}</b><span class="note">${GI[d.cat]}・${'★'.repeat(stars(d))}</span></span></button>`; }
-      if (o.k === 'up') { const d = D[o.id]; const lv = R.lv[d.id] || 1; return `<button class="btn opt optd" data-o="${i}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">⬆️ 強くする Lv${lv}→${lv + 1}</span><b>${d.ja}</b><span class="note">⚔️ ${dmgOf(d, lv)} → ${dmgOf(d, lv + 1)}</span></span></button>`; }
+      if (o.k === 'learn') { const d = D[o.id]; return `<button class="btn opt optd" data-o="${i}" data-did="${d.id}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">🎁 新しい薬</span><b>${d.ja}</b><span class="note">${GI[d.cat]}・${'★'.repeat(stars(d))}</span></span></button>`; }
+      if (o.k === 'up') { const d = D[o.id]; const lv = R.lv[d.id] || 1; return `<button class="btn opt optd" data-o="${i}" data-did="${d.id}" style="--c:${dCol(d)}">${drugArt(d, 46)}<span><span class="note">⬆️ 強くする Lv${lv}→${lv + 1}</span><b>${d.ja}</b><span class="note">⚔️ ${dmgOf(d, lv)} → ${dmgOf(d, lv + 1)}</span></span></button>`; }
       return `<button class="btn opt optd" data-o="${i}"><span class="bigem">${IT[o.id].em}</span><span><span class="note">🎒 アイテム</span><b>${IT[o.id].ja}</b><span class="note">${IT[o.id].desc}</span></span></button>`;
     }).join('')}<button class="btn" id="skip">いらない</button></div>`);
   bindStatus(false);
@@ -2301,7 +2301,7 @@ function shopScreen() {
   }
   const L = R.shop;
   const name = o => o.k === 'item' ? `<span class="bigem">${IT[o.id].em}</span><b>${IT[o.id].ja}</b><span class="note">${IT[o.id].desc}</span>` : o.k === 'relic' ? `<span class="bigem">${RL(o.id).em}</span><b>${RL(o.id).ja}</b><span class="note">ずっと効く: ${RL(o.id).desc}</span>` : o.k === 'up' ? `<span data-did="${o.id}">${drugArt(D[o.id], 44)}</span><b>${D[o.id].ja}</b><span class="note">⬆️ 強くする Lv${R.lv[o.id] || 1}→${(R.lv[o.id] || 1) + 1}</span>` : o.k === 'learn' ? `<span data-did="${o.id}">${drugArt(D[o.id], 44)}</span><b>${D[o.id].ja}</b><span class="note">🎁 新しい薬・${GI[D[o.id].cat]}</span>` : o.k === 'heal' ? '<span class="bigem">💧</span><b>点滴で 休む</b><span class="note">体力 +12</span>' : '<span class="bigem">🥛</span><b>ヨーグルト</b><span class="note">善玉菌 +5</span>';
-  screen(`${topBar('🏪 ショップ', null)}${statusBar(R)}<div class="shop">${L.list.map((o, i) => `<button class="btn opt stile" data-b="${i}" ${L.sold.includes(i) || R.coins < o.price ? 'disabled' : ''}>${name(o)}<em>${L.sold.includes(i) ? '売りきれ' : '🪙' + o.price}</em></button>`).join('')}<button class="btn main" id="out">店を出る</button></div>`);
+  screen(`${topBar('🏪 ショップ', null)}${statusBar(R)}<div class="shop">${L.list.map((o, i) => `<button class="btn opt stile" data-b="${i}" ${o.k === 'learn' || o.k === 'up' ? `data-did="${o.id}"` : ''} ${L.sold.includes(i) || R.coins < o.price ? 'disabled' : ''}>${name(o)}<em>${L.sold.includes(i) ? '売りきれ' : '🪙' + o.price}</em></button>`).join('')}<button class="btn main" id="out">店を出る</button></div>`);
   bindStatus(false);
   app.querySelectorAll('[data-b]').forEach(b => b.onclick = () => {
     const i = +b.dataset.b, o = L.list[i]; if (R.coins < o.price) return;
@@ -2328,7 +2328,7 @@ function pharmScreen() {
   }
   const L = R.pharm;
   const name = o => { const d = D[o.id]; return `<span data-did="${d.id}">${drugArt(d, 46)}</span><b>${d.ja}</b><span class="note">${o.k === 'up' ? '⬆️ 強くする Lv' + (R.lv[d.id] || 1) + '→' + ((R.lv[d.id] || 1) + 1) : '🆕 ' + d.cls}</span>`; };
-  screen(`${topBar('💊 薬局', null)}${statusBar(R)}<p class="note">薬剤師さん「どんな 薬が いりますか?」 長おしで 薬の カード。</p><div class="shop">${L.list.map((o, i) => `<button class="btn opt stile" data-b="${i}" ${L.sold.includes(i) || R.coins < o.price ? 'disabled' : ''}>${name(o)}<em>${L.sold.includes(i) ? '売りきれ' : '🪙' + o.price}</em></button>`).join('')}</div><button class="btn" id="out">出る</button>`);
+  screen(`${topBar('💊 薬局', null)}${statusBar(R)}<p class="note">薬剤師さん「どんな 薬が いりますか?」 長おしで 薬の カード。</p><div class="shop">${L.list.map((o, i) => `<button class="btn opt stile" data-b="${i}" data-did="${o.id}" ${L.sold.includes(i) || R.coins < o.price ? 'disabled' : ''}>${name(o)}<em>${L.sold.includes(i) ? '売りきれ' : '🪙' + o.price}</em></button>`).join('')}</div><button class="btn" id="out">出る</button>`);
   bindStatus(false);
   app.querySelectorAll('[data-b]').forEach(b => b.onclick = async () => {
     const i = +b.dataset.b, o = L.list[i]; if (R.coins < o.price || L.sold.includes(i)) return;
